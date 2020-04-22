@@ -63,7 +63,7 @@ class Yolov3Trainer(BaseTrainer):
                 global_step +=1
                 step_loss, y_true, y_pred = self.iter(batch)
 
-                self.metric.write(y_true,y_pred)
+                # self.metric.write(y_true,y_pred)
                 total_loss, xy_loss, wh_loss, conf_loss, class_loss = step_loss
                 total_loss = total_loss / gradient_accumalation_step
                 total_loss.backward()
@@ -109,7 +109,7 @@ class Yolov3Trainer(BaseTrainer):
                         step_loss, y_true, y_pred = self.iter(batch)
                         total_loss, xy_loss, wh_loss, conf_loss, class_loss = step_loss
 
-                        self.metric.write(y_true,y_pred)
+                        # self.metric.write(y_true,y_pred)
 
                         dev_epoch_total_loss.write(total_loss.item())
                         dev_epoch_xy_loss.write(xy_loss.item())
