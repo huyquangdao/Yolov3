@@ -3,11 +3,11 @@ import torch.optim as optim
 import argparse
 import torch
 
-from trainers.DogCatTrainer import DogCatTrainer
+from trainers.yolov3_trainer import Yolov3Trainer
 from models.yolov3 import Yolov3, YoloLossLayer
 
 from metrics.map import MeanAveragePrecisionMetric
-from utils.utils import set_seed
+from utils.utils import set_seed, read_anchors
 
 from dataset.voc_dataset import VocDataset
 from utils.log import Writer
@@ -56,7 +56,6 @@ if __name__ == "__main__":
     metric = MeanAveragePrecisionMetric(n_classes=args.n_classes)
 
 
-
     train_dataset = VocDataset(type_name='detection',
                      name_dir=args.name_dir,
                      annotation_dir= os.path.join(args.train_dir,'Annotations'),
@@ -83,14 +82,18 @@ if __name__ == "__main__":
         DEVICE = torch.device('cpu')
 
 
+
     criterion = YoloLossLayer(n_classes=args.n_classes,image_size=args.image_size,device= DEVICE,use_focal_loss=args.focal_loss,use_label_smooth=args.label_smooth)
 
-    trainer = DogCatTrainer(model= model,
+    anchors = torch.from_numpy(read_anchors(args.anchors_dir)).to(DEVICE)
+
+    trainer = Yolov3Trainer(model= model,
                         optimizer= optimizer,
                         criterion= criterion,
                         metric= metric,
                         log = writer,
                         device = DEVICE,
+                        anchors= anchors
                         )
 
     trainer.train(train_dataset=train_dataset,
