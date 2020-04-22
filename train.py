@@ -1,0 +1,112 @@
+import torch.nn as nn
+import torch.optim as optim
+import argparse
+import torch
+
+from trainers.DogCatTrainer import DogCatTrainer
+from models.yolov3 import Yolov3, YoloLossLayer
+
+from metrics.map import MeanAveragePrecisionMetric
+from utils.utils import set_seed
+
+from dataset.voc_dataset import VocDataset
+from utils.log import Writer
+
+
+def parse_args():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--train_dir', help='Your training directory', default='data/train')
+    parser.add_argument('--test_dir', help='Your testing directory', default='data/test')
+    parser.add_argument('--anchors_dir', help='Your anchors directory', default='data/voc_anchors.txt')
+    parser.add_argument('--name_dir', help='Your name directory', default='data/voc_name.txt')
+    parser.add_argument('--image_size', help='Your training image size', default=416, type = int)
+    parser.add_argument('--batch_size',help='Your training batch size',default=16, type = int)
+    parser.add_argument('--num_workers', help='number of process', default=2, type = int)
+    parser.add_argument('--seed',help='random seed',default=1234, type= int)
+    parser.add_argument('--epoch', help='training epochs', default=10, type = int)
+    parser.add_argument('--lr',help='learning rate',default=0.001)
+    parser.add_argument('--val_batch_size', help='Your validation batch size', default=16)
+    parser.add_argument('--grad_clip',help='gradient clipping theshold',default=5, type = int)
+    parser.add_argument('--grad_accum_step', help='gradient accumalation step', default=1)
+    parser.add_argument('--n_classes',help='Number of classes', default=20)
+    parser.add_argument('--pretrained',help='Number of classes', default=1, type=bool)
+    parser.add_argument('--gpu',help='use gpu', default=1, type= bool)
+    parser.add_argument('--log_dir',help='Log directory path', default='logs', type= str)
+
+    parser.add_argument('--focal_loss', help='use focal loss', default=1, type= bool)
+    parser.add_argument('--label_smooth', help='use label smooth', default=1, type= bool)
+
+    parser.add_argument('--letterbox', help='use letterbox resize', default=1, type= bool)
+
+    args = parser.parse_args()
+
+    return args
+
+
+
+if __name__ == "__main__":
+
+    args = parse_args()
+
+    model = Yolov3(args.n_classes)
+    optimizer = optim.Adam(model.parameters(), lr = args.lr)
+
+
+    metric = MeanAveragePrecisionMetric(n_classes=args.n_classes)
+
+
+
+    train_dataset = VocDataset(type_name='detection',
+                     name_dir=args.name_dir,
+                     annotation_dir= os.path.join(args.train_dir,'Annotations'),
+                     anchor_dir= args.anchors_dir,
+                     image_dir = os.path.join(args.train_dir,'JPEGImages'),
+                     image_size = args.image_size,
+                     letterbox = args.letterbox,
+                     is_train = True)
+
+    test_dataset = VocDataset(type_name='detection',
+                    name_dir=args.name_dir,
+                    annotation_dir= os.path.join(args.test_dir,'Annotations'),
+                    anchor_dir= args.anchors_dir,
+                    image_dir = os.path.join(args.test_dir,'JPEGImages'),
+                    image_size = args.image_size,
+                    letterbox = args.letterbox,
+                    is_train = False)
+
+    writer = Writer(log_dir=args.log_dir)
+
+    if args.gpu:
+        DEVICE = torch.device('cuda:0')
+    else:
+        DEVICE = torch.device('cpu')
+
+
+    criterion = YoloLossLayer(n_classes=args.n_classes,image_size=args.image_size,device= DEVICE,use_focal_loss=args.focal_loss,use_label_smooth=args.label_smooth)
+
+    trainer = DogCatTrainer(model= model,
+                        optimizer= optimizer,
+                        criterion= criterion,
+                        metric= metric,
+                        log = writer,
+                        device = DEVICE,
+                        )
+
+    trainer.train(train_dataset=train_dataset,
+                  dev_dataset = test_dataset,
+                  epochs=args.epoch,
+                  gradient_accumalation_step=args.grad_accum_step,
+                  train_batch_size=args.batch_size,
+                  dev_batch_size=args.val_batch_size,
+                  num_workers=args.num_workers,
+                  gradient_clipping=args.grad_clip)
+
+
+
+
+
+
+
+
+
