@@ -124,10 +124,10 @@ class Yolov3Trainer(BaseTrainer):
                         self.log.write('dev_prob_loss',class_loss.item(),global_step)
 
                 dev_total_loss_average = dev_epoch_total_loss.average()
-                dev_xy_loss_average = dev_epoch_total_loss.average()
-                dev_wh_loss_average = dev_epoch_total_loss.average()
-                dev_conf_loss_average = dev_epoch_total_loss.average()
-                dev_class_loss_average = dev_epoch_total_loss.average()
+                dev_xy_loss_average = dev_epoch_xy_loss.average()
+                dev_wh_loss_average = dev_epoch_wh_loss.average()
+                dev_conf_loss_average = dev_epoch_conf_loss.average()
+                dev_class_loss_average = dev_epoch_class_loss.average()
 
                 if dev_total_loss_average <= best_loss:
                     best_loss = dev_total_loss_average
