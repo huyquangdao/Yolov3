@@ -243,7 +243,7 @@ class UpsampleLayer(nn.Module):
 
 class Yolov3(nn.Module):
 
-    def __init__(self, n_classes, anchors_dir):
+    def __init__(self, n_classes):
         super(Yolov3,self).__init__()
         self.n_classes = n_classes
         self.darknet53 = Darknet53()
