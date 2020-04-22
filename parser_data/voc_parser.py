@@ -1,4 +1,4 @@
-# from base.parser import BaseParser
+from base.parser import BaseParser
 import numpy as np
 import xml.etree.ElementTree as ET
 

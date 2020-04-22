@@ -1,7 +1,7 @@
 import cv2
 import os
 from base.dataset import BaseDataset
-from parser.voc_parser import VocParser
+
 from utils.utils import resize_with_bbox, build_ground_truth, read_anchors
 
 class VocDataset(BaseDataset):
