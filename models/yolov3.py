@@ -495,3 +495,51 @@ class YoloLossLayer(nn.Module):
         class_loss = torch.sum(class_loss) / batch_size
 
         return xy_loss, wh_loss, conf_loss, class_loss
+
+
+def predict(feature_maps, anchors):
+
+    list_anchors = [anchors[6:], anchors[3:6], anchors[:3]]
+
+    reorg_results = [reorg_layer(feature_map, anchor) for feature_map, anchor in list(
+        zip(feature_maps, list_anchors))]
+
+    def reshape(result):
+
+        xy_offset, boxes, conf_logits, prob_logits = result
+
+        grid_size = xy_offset.shape[1]
+        n_classes = prob_logits.shape[-1]
+
+        boxes = boxes.view(-1, grid_size * grid_size * 3, 4)
+        conf_logits = conf_logits.view(-1, grid_size * grid_size * 3, 1)
+        prob_logits = prob_logits.view(-1,
+                                       grid_size * grid_size * 3, n_classes)
+
+        return boxes, conf_logits, prob_logits
+
+    boxes_list, confs_list, probs_list = [], [], []
+
+    for result in reorg_results:
+
+        boxes, conf, prob = reshape(result)
+
+        boxes_list.append(boxes)
+        confs_list.append(conf)
+        probs_list.append(prob)
+
+    boxes = torch.cat(boxes_list, dim=1)
+    confs = torch.cat(confs_list, dim=1)
+    probs = torch.cat(probs, dim=1)
+
+    center_x, center_y, width, height = torch.split(
+        boxes, [1, 1, 1, 1], dim=-1)
+
+    x_min = center_x - width / 2
+    y_min = center_y - height / 2
+    x_max = center_x + width / 2
+    y_max = center_y + height / 2
+
+    boxes = torch.cat([x_min, y_min, x_max, y_max], dim=-1)
+
+    return boxes, confs, probs
