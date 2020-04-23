@@ -4,14 +4,15 @@ import argparse
 import torch
 import cv2
 import numpy as np
-from utils.utils import read_anchors
+from utils.data_utils import read_anchors
 
 
 def parse_arg():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--image', help='image_path', type=str)
-    parser.add_argument('--anchors_dir', help='image_path', type=str, default='data/voc_anchors.txt')
+    parser.add_argument('--anchors_dir', help='image_path',
+                        type=str, default='data/voc_anchors.txt')
     parser.add_argument('--image_size', help='image size',
                         type=int, default=416)
     parser.add_argument(
@@ -43,7 +44,8 @@ if __name__ == "__main__":
 
     anchors = torch.from_numpy(read_anchors(args.anchors_dir))
 
-    inference = YoloInference(model = model, device = device, n_classes= args.n_classses,anchors=anchors)
+    inference = YoloInference(
+        model=model, device=device, n_classes=args.n_classses, anchors=anchors)
 
     boxes_, scores_, labels_ = inference.inference(image)
 
