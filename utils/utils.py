@@ -1,10 +1,11 @@
 from base.meters import BaseMeters
 import time
 
+
 class Loss(BaseMeters):
 
     def __init__(self):
-        super(Loss,self).__init__()
+        super(Loss, self).__init__()
 
 
 class Timer:
@@ -18,14 +19,16 @@ class Timer:
             start = time.time()
             result = function(*args, **kwargs)
             end = time.time()
-            print('function:%r took: %2.2f sec' % (function.__name__,  end - start))
+            print('function:%r took: %2.2f sec' %
+                  (function.__name__,  end - start))
             return result
 
         return wrapper
 
+
 class EarlyStopping:
 
-    def __init__(self, not_improve_step,  verbose = True):
+    def __init__(self, not_improve_step,  verbose=True):
 
         self.not_improve_step = not_improve_step
         self.verbose = verbose
@@ -38,9 +41,17 @@ class EarlyStopping:
             self.count = 0
             return False
         else:
-            self.count +=1
+            self.count += 1
             if self.count > self.not_improve_step:
                 if self.verbose:
-                    print('Performance not Improve after {0}, Early Stopping Execute .......'.format(self.count))
+                    print('Performance not Improve after {0}, Early Stopping Execute .......'.format(
+                        self.count))
                 return True
             return False
+
+
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)

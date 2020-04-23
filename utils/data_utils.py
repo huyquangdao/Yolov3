@@ -4,13 +4,6 @@ import torch
 import matplotlib.pyplot as plt
 import cv2
 
-def set_seed(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-
-
 def get_voc_names(file_path):
     voc_names = dict()
     with open(file_path,'r') as f:
