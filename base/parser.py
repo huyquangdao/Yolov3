@@ -1,4 +1,3 @@
-from utils.utils import get_voc_names
 import glob
 import os
 
@@ -7,7 +6,7 @@ class BaseParser:
     def __init__(self, type_name, file_dir, name_dir):
         self.type_name = type_name
         self.file_dir = file_dir
-        self.voc_names = get_voc_names(name_dir)
+        self.name_dir = name_dir
 
     def process_one(self, file):
         raise NotImplementedError('You must implement this function')

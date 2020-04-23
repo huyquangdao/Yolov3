@@ -1,11 +1,14 @@
 from base.parser import BaseParser
 import numpy as np
 import xml.etree.ElementTree as ET
+from utils.data_utils import get_voc_names
 
 class VocParser(BaseParser):
 
     def __init__(self, type_name, file_dir, name_dir):
         super(VocParser,self).__init__(type_name,file_dir,name_dir)
+        self.voc_names = get_voc_names(self.name_dir)
+
 
     def process_one(self, xml_file):
 
