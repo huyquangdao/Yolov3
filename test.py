@@ -44,6 +44,8 @@ if __name__ == "__main__":
 
     anchors = torch.from_numpy(read_anchors(args.anchors_dir))
 
+    image = torch.from_numpy(image)
+
     inference = YoloInference(
         model=model, device=device, n_classes=args.n_classes, anchors=anchors)
 
