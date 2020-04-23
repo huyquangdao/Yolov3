@@ -29,6 +29,7 @@ if __name__ == "__main__":
 
     args = parse_arg()
     image = cv2.imread(args.image)
+    image = cv2.resize(image,(args.image_size, args.image_size))
 
     image = image / 255.
 
