@@ -50,7 +50,9 @@ class EarlyStopping:
                     print('Performance not Improve after {0}, Early Stopping Execute .......'.format(
                         self.count))
                 return True
-            return False
+            else:
+                print('Performance not improve, count: {}'.format(self.count))
+                return False
 
 
 def set_seed(seed):
