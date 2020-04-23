@@ -70,7 +70,7 @@ if __name__ == "__main__":
     set_seed(args.seed)
 
     model = Yolov3(args.n_classes)
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
     metric = MeanAveragePrecisionMetric(n_classes=args.n_classes)
 
