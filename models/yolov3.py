@@ -497,11 +497,11 @@ class YoloLossLayer(nn.Module):
         return xy_loss, wh_loss, conf_loss, class_loss
 
 
-def predict(feature_maps, anchors):
+def predict(feature_maps, anchors, n_classes, image_size ,device):
 
     list_anchors = [anchors[6:], anchors[3:6], anchors[:3]]
 
-    reorg_results = [reorg_layer(feature_map, anchor) for feature_map, anchor in list(
+    reorg_results = [reorg_layer(feature_map, anchor, n_classes, image_size, device) for feature_map, anchor in list(
         zip(feature_maps, list_anchors))]
 
     def reshape(result):
