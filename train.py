@@ -7,7 +7,9 @@ from trainers.yolov3_trainer import Yolov3Trainer
 from models.yolov3 import Yolov3, YoloLossLayer
 
 from metrics.map import MeanAveragePrecisionMetric
-from utils.utils import set_seed, read_anchors, set_seed
+from utils.utils import set_seed
+
+from utils.data_utils import read_anchors
 
 from dataset.voc_dataset import VocDataset
 from utils.log import Writer
