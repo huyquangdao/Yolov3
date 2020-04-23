@@ -1,7 +1,7 @@
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 import torch
-from utils.loss_meter import Loss
+from utils.utils import Loss, EarlyStopping
 
 class BaseTrainer:
 
@@ -30,6 +30,7 @@ class BaseTrainer:
               train_batch_size = 16,
               dev_batch_size = 32,
               num_workers = 2,
+              not_imporve_step = 3,
               gradient_clipping = 5):
 
         train_loader = DataLoader(dataset=train_dataset,
@@ -41,10 +42,12 @@ class BaseTrainer:
 
         if dev_dataset is not None:
             dev_loader = DataLoader(dataset=dev_dataset,batch_size = dev_batch_size, shuffle= False, num_workers = num_workers)
+            early_stopping = EarlyStopping(not_improve_step=not_imporve_step, verbose= True)
 
         self.model.to(self.device)
 
         global_step = 0
+        val_global_step = 0
         best_loss = 1000
 
         for i in range(epochs):
@@ -63,7 +66,7 @@ class BaseTrainer:
                 step_loss.backward()
 
                 train_epoch_loss.write(step_loss.item())
-                self.log.write('training_loss',step_loss.item(),global_step)
+                self.log.write('loss/training_loss',step_loss.item(),global_step)
 
                 if global_step % gradient_accumalation_step == 0:
                     torch.nn.utils.clip_grad_norm(self.model.parameters(), gradient_clipping)
@@ -87,12 +90,19 @@ class BaseTrainer:
                 with torch.no_grad():
 
                     for batch in tqdm(dev_loader):
+
+                        val_global_step +=1
+
                         step_loss, y_true, y_pred = self.iter(batch)
                         self.metric.write(y_true,y_pred)
                         dev_epoch_loss.write(step_loss.item())
-                        self.log.write('validation_loss',step_loss.item(),global_step)
+                        self.log.write('loss/validation_loss',step_loss.item(),val_global_step)
 
                 dev_loss = dev_epoch_loss.average()
+
+                stop = early_stopping.step(val=dev_loss)
+                if stop:
+                    break
 
                 if dev_loss <= best_loss:
                     best_loss = dev_loss

@@ -2,7 +2,7 @@ import os
 import torch
 from base.trainer import BaseTrainer
 from torch.utils.data import DataLoader
-from utils.loss_meter import Loss
+from utils.utils import Loss, EarlyStopping
 from tqdm import tqdm
 
 
@@ -29,6 +29,7 @@ class Yolov3Trainer(BaseTrainer):
               train_batch_size = 16,
               dev_batch_size = 32,
               num_workers = 2,
+              not_imporve_step = 3,
               gradient_clipping = 5):
 
         train_loader = DataLoader(dataset=train_dataset,
@@ -40,10 +41,12 @@ class Yolov3Trainer(BaseTrainer):
 
         if dev_dataset is not None:
             dev_loader = DataLoader(dataset=dev_dataset,batch_size = dev_batch_size, shuffle= False, num_workers = num_workers)
+            early_stopping = EarlyStopping(not_improve_step=not_imporve_step, verbose= True)
 
         self.model.to(self.device)
 
         global_step = 0
+        val_global_step = 0
         best_loss = 1000
 
         for i in range(epochs):
@@ -74,11 +77,11 @@ class Yolov3Trainer(BaseTrainer):
                 train_epoch_conf_loss.write(conf_loss.item())
                 train_epoch_class_loss.write(class_loss.item())
 
-                self.log.write('training_total_loss',total_loss.item(),global_step)
-                self.log.write('training_xy_loss',xy_loss.item(),global_step)
-                self.log.write('training_wh_loss',wh_loss.item(),global_step)
-                self.log.write('training_conf_loss',conf_loss.item(),global_step)
-                self.log.write('training_prob_loss',class_loss.item(),global_step)
+                self.log.write('total_loss/training_total_loss',total_loss.item(),global_step)
+                self.log.write('xy_loss/training_xy_loss',xy_loss.item(),global_step)
+                self.log.write('wh_loss/training_wh_loss',wh_loss.item(),global_step)
+                self.log.write('conf_loss/training_conf_loss',conf_loss.item(),global_step)
+                self.log.write('class_loss/training_class_loss',class_loss.item(),global_step)
 
                 if global_step % gradient_accumalation_step == 0:
                     torch.nn.utils.clip_grad_norm(self.model.parameters(), gradient_clipping)
@@ -117,17 +120,22 @@ class Yolov3Trainer(BaseTrainer):
                         dev_epoch_conf_loss.write(conf_loss.item())
                         dev_epoch_class_loss.write(class_loss.item())
 
-                        self.log.write('dev_total_loss',total_loss.item(),global_step)
-                        self.log.write('dev_xy_loss',xy_loss.item(),global_step)
-                        self.log.write('dev_wh_loss',wh_loss.item(),global_step)
-                        self.log.write('dev_conf_loss',conf_loss.item(),global_step)
-                        self.log.write('dev_prob_loss',class_loss.item(),global_step)
+                        self.log.write('total_loss/dev_total_loss',total_loss.item(),val_global_step)
+                        self.log.write('xy_loss/dev_xy_loss',xy_loss.item(),val_global_step)
+                        self.log.write('wh_loss/dev_wh_loss',wh_loss.item(),val_global_step)
+                        self.log.write('conf_loss/dev_conf_loss',conf_loss.item(),val_global_step)
+                        self.log.write('class_loss/dev_class_loss',class_loss.item(),val_global_step)
 
                 dev_total_loss_average = dev_epoch_total_loss.average()
                 dev_xy_loss_average = dev_epoch_xy_loss.average()
                 dev_wh_loss_average = dev_epoch_wh_loss.average()
                 dev_conf_loss_average = dev_epoch_conf_loss.average()
                 dev_class_loss_average = dev_epoch_class_loss.average()
+
+                stop = early_stopping.step(val= dev_total_loss_average)
+
+                if stop:
+                    break
 
                 if dev_total_loss_average <= best_loss:
                     best_loss = dev_total_loss_average
