@@ -7,7 +7,7 @@ from trainers.yolov3_trainer import Yolov3Trainer
 from models.yolov3 import Yolov3, YoloLossLayer
 
 from metrics.map import MeanAveragePrecisionMetric
-from utils.utils import set_seed
+from utils.utils import set_seed, Summary
 
 from utils.data_utils import read_anchors
 
@@ -107,6 +107,9 @@ if __name__ == "__main__":
                               device=DEVICE, use_focal_loss=args.focal_loss, use_label_smooth=args.label_smooth)
 
     anchors = torch.from_numpy(read_anchors(args.anchors_dir)).to(DEVICE)
+
+    summary = Summary(model = model,train_dataset = train_dataset,args = args,dev_dataset=test_dataset)
+    summary()
 
     trainer = Yolov3Trainer(model=model,
                             optimizer=optimizer,
