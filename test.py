@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     boxes_, scores_, labels_ = inference.inference(image)
 
-    if args.letterbox_resize:
+    if args.letterbox:
         boxes_[:, [0, 2]] = (boxes_[:, [0, 2]] - dw) / resize_ratio
         boxes_[:, [1, 3]] = (boxes_[:, [1, 3]] - dh) / resize_ratio
     else:
