@@ -531,7 +531,7 @@ def predict(feature_maps, anchors, n_classes, image_size, device):
 
     boxes = torch.cat(boxes_list, dim=1)
     confs = torch.cat(confs_list, dim=1)
-    probs = torch.cat(probs, dim=1)
+    probs = torch.cat(probs_list, dim=1)
 
     center_x, center_y, width, height = torch.split(
         boxes, [1, 1, 1, 1], dim=-1)
