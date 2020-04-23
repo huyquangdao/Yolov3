@@ -4,7 +4,7 @@ import argparse
 import torch
 import cv2
 import numpy as np
-from utils.data_utils import read_anchors
+from utils.data_utils import read_anchors, letterbox_resize
 
 
 def parse_arg():
@@ -19,6 +19,7 @@ def parse_arg():
         '--n_classes', help='number of classes', type=int, default=20)
     parser.add_argument('--model', help='model_dir', type=str)
     parser.add_argument('--gpu', type=bool, default=1)
+    parser.add_argument('--letterbox', type=bool, default=1)
 
     args = parser.parse_args()
 
@@ -28,8 +29,16 @@ def parse_arg():
 if __name__ == "__main__":
 
     args = parse_arg()
-    image = cv2.imread(args.image)
-    image = cv2.resize(image,(args.image_size, args.image_size))
+    image_ori = cv2.imread(args.image)
+
+    if args.letterbox:
+        image, resize_ratio, dw, dh = letterbox_resize(
+            image_ori, args.image_size, args.image_size)
+    else:
+        height_ori, width_ori = image_ori.shape[:2]
+        image = cv2.resize(image_ori, (args.image_size, args.image_size))
+
+    image = image[..., ::-1]
 
     image = image / 255.
 
@@ -52,8 +61,18 @@ if __name__ == "__main__":
 
     boxes_, scores_, labels_ = inference.inference(image)
 
+    if args.letterbox_resize:
+        boxes_[:, [0, 2]] = (boxes_[:, [0, 2]] - dw) / resize_ratio
+        boxes_[:, [1, 3]] = (boxes_[:, [1, 3]] - dh) / resize_ratio
+    else:
+        boxes_[:, [0, 2]] *= (width_ori/float(args.image_size))
+        boxes_[:, [1, 3]] *= (height_ori/float(args.image_size))
+
+    print("box coords:")
     print(boxes_)
-
+    print('*' * 30)
+    print("scores:")
     print(scores_)
-
+    print('*' * 30)
+    print("labels:")
     print(labels_)
