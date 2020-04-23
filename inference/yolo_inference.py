@@ -10,6 +10,8 @@ class YoloInference(BaseInference):
         self.anchors = anchors
         self.n_classes = n_classes
 
+        self.anchors = self.anchors.to(self.device)
+
     def inference(self, input, iou_threshold=0.45, score_threshold=0.3, top_k=200):
         if len(input.shape) < 4:
             input = input.unsqueeze(0)

@@ -1,19 +1,23 @@
-from inference.DogCatInference import DogCatInference
-from models.DogCatModel import Resnet34
+from inference.yolo_inference import YoloInference
+from models.yolov3 import Yolov3
 import argparse
 import torch
 import cv2
-from torchvision.transforms import Compose, ToPILImage, ToTensor, RandomCrop, Normalize, Resize, RandomHorizontalFlip
+import numpy as np
+from utils.utils import read_anchors
 
 
 def parse_arg():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--image',help='image_path',type=str)
-    parser.add_argument('--image_size',help='image size',type=int, default=224)
-    parser.add_argument('--n_classes',help='number of classes',type=int, default=2)
-    parser.add_argument('--model',help='model_dir',type=str)
-    parser.add_argument('--gpu',type=bool,default=1)
+    parser.add_argument('--image', help='image_path', type=str)
+    parser.add_argument('--anchors_dir', help='image_path', type=str, default='data/voc_anchors.txt')
+    parser.add_argument('--image_size', help='image size',
+                        type=int, default=416)
+    parser.add_argument(
+        '--n_classes', help='number of classes', type=int, default=20)
+    parser.add_argument('--model', help='model_dir', type=str)
+    parser.add_argument('--gpu', type=bool, default=1)
 
     args = parser.parse_args()
 
@@ -24,26 +28,23 @@ if __name__ == "__main__":
 
     args = parse_arg()
     image = cv2.imread(args.image)
-    model = Resnet34(args.n_classes,pretrained=False)
-    model.load_state_dict(torch.load(args.model))
 
-    test_transform = Compose([
-        ToPILImage(),
-        Resize(size=[args.image_size, args.image_size]),
-        ToTensor(),
-        Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225]),
-    ])
+    image = image / 255.
+
+    image = image.astype(np.float32)
+
+    model = Yolov3(args.n_classes)
+    model.load_state_dict(torch.load(args.model))
 
     if args.gpu:
         device = torch.device('cuda:0')
     else:
         device = torch.device('cpu')
 
-    inference = DogCatInference(model=model,device=device,transform=test_transform)
-    result = inference.inference(image)
+    anchors = torch.from_numpy(read_anchors(args.anchors_dir))
+
+    inference = YoloInference(model = model, device = device, n_classes= args.n_classses,anchors=anchors)
+
+    boxes,  = inference.inference(image)
 
     print(result)
-
-
-
-
