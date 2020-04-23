@@ -45,6 +45,10 @@ if __name__ == "__main__":
 
     inference = YoloInference(model = model, device = device, n_classes= args.n_classses,anchors=anchors)
 
-    boxes,  = inference.inference(image)
+    boxes_, scores_, labels_ = inference.inference(image)
 
-    print(result)
+    print(boxes_)
+
+    print(scores_)
+
+    print(labels_)
