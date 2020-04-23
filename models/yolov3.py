@@ -525,6 +525,9 @@ def predict(feature_maps, anchors, n_classes, image_size, device):
 
         boxes, conf, prob = reshape(result)
 
+        conf = torch.sigmoid(conf)
+        prob = torch.sigmoid(prob)
+
         boxes_list.append(boxes)
         confs_list.append(conf)
         probs_list.append(prob)
