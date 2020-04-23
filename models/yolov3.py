@@ -497,7 +497,7 @@ class YoloLossLayer(nn.Module):
         return xy_loss, wh_loss, conf_loss, class_loss
 
 
-def predict(feature_maps, anchors, n_classes, image_size ,device):
+def predict(feature_maps, anchors, n_classes, image_size, device):
 
     list_anchors = [anchors[6:], anchors[3:6], anchors[:3]]
 
@@ -511,10 +511,11 @@ def predict(feature_maps, anchors, n_classes, image_size ,device):
         grid_size = xy_offset.shape[1]
         n_classes = prob_logits.shape[-1]
 
-        boxes = boxes.view(-1, grid_size * grid_size * 3, 4)
-        conf_logits = conf_logits.view(-1, grid_size * grid_size * 3, 1)
-        prob_logits = prob_logits.view(-1,
-                                       grid_size * grid_size * 3, n_classes)
+        boxes = boxes.contiguous().view(-1, grid_size * grid_size * 3, 4)
+        conf_logits = conf_logits.contiguous().view(-1,
+                                                    grid_size * grid_size * 3, 1)
+        prob_logits = prob_logits.contiguous().view(-1,
+                                                    grid_size * grid_size * 3, n_classes)
 
         return boxes, conf_logits, prob_logits
 
