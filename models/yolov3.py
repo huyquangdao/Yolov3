@@ -543,4 +543,8 @@ def predict(feature_maps, anchors, n_classes, image_size, device):
 
     boxes = torch.cat([x_min, y_min, x_max, y_max], dim=-1)
 
+    boxes = boxes.detach().cpu().numpy()
+    confs = confs.detach().cpu().numpy()
+    probs = probs.detach().cpu().numpy()
+
     return boxes, confs, probs
