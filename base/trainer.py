@@ -19,7 +19,7 @@ class BaseTrainer:
         raise NotImplementedError('You must implement this method')
 
     def save_model(self, model_path):
-        torch.save(self.model, model_path)
+        torch.save(self.model.state_dict(), model_path)
         print('perfomance grain, save mode:')
 
     def train(self,

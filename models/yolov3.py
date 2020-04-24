@@ -3,11 +3,11 @@ import torch
 import math
 
 if torch.cuda.is_available():
-    bool_tensor = torch.cuda.BoolTensor()
-    float_tensor = torch.cuda.FloatTensor()
+    bool_tensor = torch.cuda.BoolTensor
+    float_tensor = torch.cuda.FloatTensor
 else:
-    bool_tensor = torch.BoolTensor()
-    float_tensor = torch.FloatTensor()
+    bool_tensor = torch.BoolTensor
+    float_tensor = torch.FloatTensor
 
 
 class DBL(nn.Module):
@@ -261,27 +261,27 @@ class Yolov3(nn.Module):
 
         self.yolo_layer1 = YoloLayer(in_channels=1024, out_channels=1024)
         self.conv1 = nn.Conv2d(
-            in_channels=1024, out_channels=3 * (5 + self.n_classes), kernel_size=1)
+            in_channels=1024, out_channels=3 * (5 + self.n_classes), kernel_size=1, bias=True)
         self.upsample1 = UpsampleLayer(
             scale_factor=2, in_channels=512, out_channels=256, k_size=1, stride=1, padding=True)
 
         self.yolo_layer2 = YoloLayer(in_channels=768, out_channels=512)
         self.conv2 = nn.Conv2d(
-            in_channels=512, out_channels=3 * (5 + self.n_classes), kernel_size=1)
+            in_channels=512, out_channels=3 * (5 + self.n_classes), kernel_size=1, bias=True)
         self.upsample2 = UpsampleLayer(
             scale_factor=2, in_channels=256, out_channels=128, k_size=1, stride=1, padding=True)
 
         self.yolo_layer3 = YoloLayer(in_channels=384, out_channels=256)
         self.conv3 = nn.Conv2d(
-            in_channels=256, out_channels=3 * (5 + self.n_classes), kernel_size=1)
+            in_channels=256, out_channels=3 * (5 + self.n_classes), kernel_size=1, bias=True)
 
-        # for m in self.modules():
-        #     if isinstance(m, nn.Conv2d):
-        #         nn.init.kaiming_normal(m.weight)
-        #         m.bias.data.fill_(0.01)
-        #     elif isinstance(m, nn.BatchNorm2d):
-        #         m.weight.data.fill_(1)
-        #         m.bias.data.zero_()
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal(m.weight)
+                m.bias.data.fill_(0.01)
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
 
     def forward(self, image):
 
@@ -310,7 +310,7 @@ class Yolov3(nn.Module):
         return feature_map1, feature_map2, feature_map3
 
 
-def reorg_layer(feature_map, anchors, n_classes, image_size, device):
+def reorg_layer(feature_map, anchors, n_classes, image_size, device=None):
 
     grid_size = feature_map.shape[2]
     ratio = image_size / grid_size
@@ -326,8 +326,8 @@ def reorg_layer(feature_map, anchors, n_classes, image_size, device):
 
     box_centers = torch.sigmoid(box_centers)
 
-    grid_x = torch.arange(start=0, end=grid_size).to(device)
-    grid_y = torch.arange(start=0, end=grid_size).to(device)
+    grid_x = torch.arange(start=0, end=grid_size).type(float_tensor)
+    grid_y = torch.arange(start=0, end=grid_size).type(float_tensor)
 
     grid_y, grid_x = torch.meshgrid([grid_x, grid_y])
 
@@ -365,14 +365,12 @@ def calculate_iou(boxes_wh, anchors):
         boxes_wh[..., 0] * boxes_wh[..., 1] + anchors[:, 0] * anchors[:, 1] - whs[..., 0] * whs[...,
                                                                                                 1] + 1e-10)
     #iou = [grid_size, grid_size ,3]
-
     return iou
 
 
 def calculate_ignore_mask(object_mask, y_true_boxes, anchors, threshold):
 
-    ignore_mask = torch.ones(size=object_mask.shape).type(
-        torch.cuda.FloatTensor)
+    ignore_mask = torch.ones(size=object_mask.shape).type(float_tensor)
     #ignore_mask = [batch_size, grid_size, grid_size, 3,1]
 
     temp = y_true_boxes.clone()
@@ -467,17 +465,17 @@ class YoloLossLayer(nn.Module):
             (y_true[..., 2:3] / self.image_size) * \
             (y_true[..., 3:4] / self.image_size)
 
-        xy_loss = torch.sum(((true_xy - pred_xy)**2) *
-                            object_mask * box_loss_scale) / batch_size
-        wh_loss = torch.sum(((true_tw_th - pred_tw_th)**2)
-                            * object_mask * box_loss_scale) / batch_size
+        xy_loss = 5. * torch.sum(((true_xy - pred_xy)**2) *
+                                 object_mask * box_loss_scale) / batch_size
+        wh_loss = 5. * torch.sum(((true_tw_th - pred_tw_th)**2)
+                                 * object_mask * box_loss_scale) / batch_size
 
         conf_pos_mask = object_mask
         conf_neg_mask = (1 - object_mask) * ignore_mask
         conf_loss_pos = conf_pos_mask * \
             torch.nn.functional.binary_cross_entropy_with_logits(
                 target=object_mask, input=conf_logits)
-        conf_loss_neg = conf_neg_mask * \
+        conf_loss_neg = 0.5 * conf_neg_mask * \
             torch.nn.functional.binary_cross_entropy_with_logits(
                 target=object_mask, input=conf_logits)
 
