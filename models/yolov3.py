@@ -1,7 +1,6 @@
 import math
 import torch
 import torch.nn as nn
-% % writefile models/yolov3.py
 
 if torch.cuda.is_available():
     bool_tensor = torch.cuda.BoolTensor
