@@ -274,11 +274,9 @@ class Yolov3(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                print('in here')
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
             elif isinstance(m, nn.BatchNorm2d):
-                print('in here')
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
