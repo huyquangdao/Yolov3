@@ -391,7 +391,7 @@ def calculate_ignore_mask(pred_boxes, y_true, object_mask,  threshold):
     for idx in range(batch_size):
 
         valid_true_boxes = torch.masked_select(
-            y_true_boxes[idx, ..., :4], object_mask.type(bool_tensor))
+            y_true[idx, ..., :4], object_mask.type(bool_tensor))
 
         #valid_true_boxe = [V,4]
 
