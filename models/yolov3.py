@@ -352,40 +352,66 @@ def reorg_layer(feature_map, anchors, n_classes, image_size, device=None):
     return xy_offset, boxes, conf_logits, prob_logits
 
 
-def calculate_iou(boxes_wh, anchors):
+def calculate_iou(boxes_wh, valid_true_boxes):
 
     #boxes = [grid_size, grid_size, 3, 2]
     #anchors = [3,2]
-    min_hw = torch.max(- boxes_wh / 2, - anchors / 2)
-    max_hw = torch.min(boxes_wh/2, anchors / 2)
+    pred_box_xy = pred_boxes[..., 0:2]
+    pred_box_wh = pred_boxes[..., 2:4]
 
-    whs = max_hw - min_hw
+    # shape: [13, 13, 3, 1, 2]
+    pred_box_xy = torch.unsqueeze(pred_box_xy, dim=-2)
+    pred_box_wh = torch.unsqueeze(pred_box_wh, dim=-2)
 
-    iou = (whs[..., 0] * whs[..., 1]) / (
-        boxes_wh[..., 0] * boxes_wh[..., 1] + anchors[:, 0] * anchors[:, 1] - whs[..., 0] * whs[...,
-                                                                                                1] + 1e-10)
-    #iou = [grid_size, grid_size ,3]
+    # [V, 2]
+    true_box_xy = valid_true_boxes[:, 0:2]
+    true_box_wh = valid_true_boxes[:, 2:4]
+
+    # [13, 13, 3, 1, 2] & [V, 2] ==> [13, 13, 3, V, 2]
+    intersect_mins = torch.max(pred_box_xy - pred_box_wh / 2.,
+                               true_box_xy - true_box_wh / 2.)
+    intersect_maxs = torch.min(pred_box_xy + pred_box_wh / 2.,
+                               true_box_xy + true_box_wh / 2.)
+    intersect_wh = torch.max(intersect_maxs - intersect_mins, 0.)
+
+    # shape: [13, 13, 3, V]
+    intersect_area = intersect_wh[..., 0] * intersect_wh[..., 1]
+    # shape: [13, 13, 3, 1]
+    pred_box_area = pred_box_wh[..., 0] * pred_box_wh[..., 1]
+    # shape: [V]
+    true_box_area = true_box_wh[..., 0] * true_box_wh[..., 1]
+    # shape: [1, V]
+    true_box_area = torch.unsqueeze(true_box_area, dim=0)
+
+    # [13, 13, 3, V]
+    iou = intersect_area / \
+        (pred_box_area + true_box_area - intersect_area + 1e-10)
+
     return iou
 
 
-def calculate_ignore_mask(object_mask, y_true_boxes, anchors, threshold):
+def calculate_ignore_mask(pred_boxes, y_true, object_mask,  threshold):
 
-    ignore_mask = torch.ones(size=object_mask.shape).type(float_tensor)
-    #ignore_mask = [batch_size, grid_size, grid_size, 3,1]
+    batch_size = pred_boxes.shape[0]
 
-    temp = y_true_boxes.clone()
-    #temp = [batch_size, grid_size, grid_size, 3, 2]
+    ignore_mask = torch.zeros(size=object_mask.size())
 
-    batch_size = object_mask.shape[0]
-    for i in range(batch_size):
-        list_boxes_coord = (y_true_boxes[i] != 0).nonzero()
-        for coor in list_boxes_coord:
-            dy, dx, db, _, = coor
-            temp[i, dy, dx, :] = y_true_boxes[i, dy, dx, db]
+    for idx in range(batch_size):
 
-        iou = calculate_iou(temp[i], anchors)
+        valid_true_boxes = torch.masked_select(
+            y_true_boxes[idx, ..., :4], object_mask.type(bool_tensor))
 
-        ignore_mask[i] = ignore_mask[i].masked_fill(iou.unsqueeze(-1) > 0.5, 0)
+        #valid_true_boxe = [V,4]
+
+        # shape: [13, 13, 3]
+        # shape: [13, 13, 3, 4] & [V, 4] ==> [13, 13, 3, V]
+        iou = calculate_iou(pred_boxes[idx], valid_true_boxes)
+
+        best_iou = torch.max(iou, dim=-1)
+
+        ignore_mask_temp = (best_iou < threshold).type(float_tensor)
+
+        ignore_mask[idx] = ignore_mask_temp
 
     return ignore_mask
 
@@ -439,7 +465,7 @@ class YoloLossLayer(nn.Module):
         y_true_wh = y_true[..., 2:4]
 
         ignore_mask = calculate_ignore_mask(
-            object_mask, y_true_wh, anchors, self.ignore_threshold)
+            pred_boxes, y_true, anchors, self.ignore_threshold)
 
         #ignore_mask = [batch_size, gird_size, grid_size, 3, 1]
 
