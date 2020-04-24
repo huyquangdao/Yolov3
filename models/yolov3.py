@@ -323,7 +323,7 @@ def reorg_layer(feature_map, anchors, n_classes, image_size, device=None):
 
     grid_y, grid_x = torch.meshgrid([grid_x, grid_y])
 
-    xy_offset = torch.cat([grid_x.unsqeeze(-1), grid_y.unsqueeze(-1)], dim=-1)
+    xy_offset = torch.cat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)], dim=-1)
 
     #xy_offset = [13,13,2]
 
