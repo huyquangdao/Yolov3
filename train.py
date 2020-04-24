@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument('--epoch', help='training epochs',
                         default=20, type=int)
     parser.add_argument('--learning_rate',
-                        help='learning rate', default=0.0001)
+                        help='learning rate', default=1e-4)
     parser.add_argument('--val_batch_size',
                         help='Your validation batch size', default=8)
     parser.add_argument(
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     anchors = torch.from_numpy(read_anchors(args.anchors_dir)).to(DEVICE)
 
     summary = Summary(model=model, train_dataset=train_dataset,
-                      args=args, dev_dataset=test_dataset)
+                      args=args, dev_dataset=test_dataset, device=DEVICE)
     summary()
 
     trainer = Yolov3Trainer(model=model,
