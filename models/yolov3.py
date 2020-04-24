@@ -452,10 +452,10 @@ class YoloLossLayer(nn.Module):
 
         pred_tw_th = pred_boxes_wh / anchors
 
-        # true_tw_th = torch.where(condition=(true_tw_th == 0),
-        #                       x= torch.ones_like(true_tw_th).type(torch.cuda.FloatTensor), other= true_tw_th)
-        # true_tw_th = torch.where(condition=(pred_tw_th == 0),
-        #                       x= torch.ones_like(pred_tw_th).type(torch.cuda.FloatTensor), other= pred_tw_th)
+        true_tw_th = torch.where(condition=(true_tw_th == 0),
+                                 x=torch.ones_like(true_tw_th).type(torch.cuda.FloatTensor), other=true_tw_th)
+        pred_tw_th = torch.where(condition=(pred_tw_th == 0),
+                                 x=torch.ones_like(pred_tw_th).type(torch.cuda.FloatTensor), other=pred_tw_th)
 
         true_tw_th = torch.log(torch.clamp(true_tw_th, 1e-9, 1e9))
         pred_tw_th = torch.log(torch.clamp(pred_tw_th, 1e-9, 1e9))
