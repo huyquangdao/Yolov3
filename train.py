@@ -44,16 +44,16 @@ def parse_args():
     parser.add_argument('--grad_accum_step',
                         help='gradient accumalation step', default=1)
     parser.add_argument('--n_classes', help='Number of classes', default=20)
-    parser.add_argument(
-        '--pretrained', help='Number of classes', default=1, type=bool)
+
     parser.add_argument('--gpu', help='use gpu', default=1, type=bool)
+    
     parser.add_argument(
         '--log_dir', help='Log directory path', default='logs', type=str)
 
     parser.add_argument(
-        '--focal_loss', help='use focal loss', default=1, type=bool)
+        '--focal_loss', help='use focal loss', default=0, type=bool)
     parser.add_argument(
-        '--label_smooth', help='use label smooth', default=1, type=bool)
+        '--label_smooth', help='use label smooth', default=0, type=bool)
 
     parser.add_argument(
         '--letterbox', help='use letterbox resize', default=1, type=bool)
@@ -133,4 +133,3 @@ if __name__ == "__main__":
                   dev_batch_size=args.val_batch_size,
                   num_workers=args.num_workers,
                   gradient_clipping=args.grad_clip)
-
