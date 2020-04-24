@@ -457,7 +457,7 @@ class YoloLossLayer(nn.Module):
         y_true_wh = y_true[..., 2:4]
 
         ignore_mask = calculate_ignore_mask(
-            pred_boxes, y_true, anchors, self.ignore_threshold)
+            boxes, y_true, anchors, self.ignore_threshold)
 
         #ignore_mask = [batch_size, gird_size, grid_size, 3, 1]
 
