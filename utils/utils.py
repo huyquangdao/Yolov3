@@ -21,7 +21,8 @@ class Summary:
     def __call__(self):
 
         print('Model Summary')
-        summary(self.model, input_size=(3, self.args.image_size, self.args.image_size))
+        summary(self.model, input_size=(
+            3, self.args.image_size, self.args.image_size))
 
         print('Training Image: {}', len(self.train_dataset))
 
@@ -130,7 +131,7 @@ def py_nms(boxes, scores, max_boxes=50, iou_thresh=0.5):
     return keep[:max_boxes]
 
 
-def cpu_nms(boxes, scores, num_classes, max_boxes=50, score_thresh=0.4, iou_thresh=0.5):
+def cpu_nms(boxes, scores, num_classes, max_boxes=50, score_thresh=0.01, iou_thresh=0.5):
     """
     Perform NMS on CPU.
     Arguments:
@@ -163,3 +164,27 @@ def cpu_nms(boxes, scores, num_classes, max_boxes=50, score_thresh=0.4, iou_thre
     label = np.concatenate(picked_label, axis=0)
 
     return boxes, score, label
+
+
+def load_weights(model, darknet_weight_path):
+
+    fp = open(darknet_weight_path, "rb")
+
+    # The first 4 values are header information
+    # 1. Major version number
+    # 2. Minor Version Number
+    # 3. Subversion number
+    # 4. IMages seen
+    header = np.fromfile(fp, dtype = np.int32, count = 5)
+    header = torch.from_numpy(header)
+    seen = header[3]
+
+    # The rest of the values are the weights
+    # Let's load them up
+    weights = np.fromfile(fp, dtype = np.float32)
+
+    ptr = 0
+
+    for name, module in model.named_parameters():
+        if 'Conv' in name:
+            

@@ -23,6 +23,7 @@ class DBL(nn.Module):
                               out_channels=out_channels,
                               kernel_size=k_size,
                               stride=stride,
+                              bias=False,
                               padding=pad)
 
         self.bn = nn.BatchNorm2d(num_features=out_channels)
@@ -61,11 +62,13 @@ class ResUnit(nn.Module):
 
     def forward(self, input):
 
+        shortcut = input
+
         output = self.conv_bn_relu1(input)
 
         output = self.conv_bn_relu2(output)
 
-        output = output + input
+        output = output + shortcut
 
         return output
 
