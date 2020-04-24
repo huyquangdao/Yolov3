@@ -8,17 +8,20 @@ from torchsummary import summary
 
 class Summary:
 
-    def __init__(self, model, train_dataset, args,  dev_dataset=None):
+    def __init__(self, model, device, train_dataset, args,  dev_dataset=None):
         super().__init__()
         self.train_dataset = train_dataset
         self.dev_dataset = dev_dataset
         self.model = model
         self.hyper_params = vars(args)
 
+        self.model.to(device)
+        self.args = args
+
     def __call__(self):
 
         print('Model Summary')
-        summary(self.model, input_size=(3, args.image_size, args.image_size))
+        summary(self.model, input_size=(3, self.args.image_size, self.args.image_size))
 
         print('Training Image: {}', len(self.train_dataset))
 
@@ -27,7 +30,7 @@ class Summary:
 
         print('Hyper Parameters')
 
-        for key, value in self.hyper_params:
+        for key, value in self.hyper_params.items():
             print('{0} : {1}'.format(key, value))
 
 
@@ -127,7 +130,7 @@ def py_nms(boxes, scores, max_boxes=50, iou_thresh=0.5):
     return keep[:max_boxes]
 
 
-def cpu_nms(boxes, scores, num_classes, max_boxes=50, score_thresh=0.5, iou_thresh=0.5):
+def cpu_nms(boxes, scores, num_classes, max_boxes=50, score_thresh=0.4, iou_thresh=0.5):
     """
     Perform NMS on CPU.
     Arguments:

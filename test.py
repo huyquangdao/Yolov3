@@ -59,7 +59,8 @@ if __name__ == "__main__":
     inference = YoloInference(
         model=model, device=device, n_classes=args.n_classes, anchors=anchors)
 
-    boxes_, scores_, labels_ = inference.inference(image)
+    boxes_, scores_, labels_ = inference.inference(
+        image, iou_threshold=0.45, score_threshold=0.01, top_k=50)
 
     if args.letterbox:
         boxes_[:, [0, 2]] = (boxes_[:, [0, 2]] - dw) / resize_ratio

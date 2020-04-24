@@ -58,6 +58,9 @@ def parse_args():
     parser.add_argument(
         '--letterbox', help='use letterbox resize', default=1, type=bool)
 
+    parser.add_argument(
+        '--weight_decay', help='l2 regularization term', default=5e-4, type=float)
+
     args = parser.parse_args()
 
     return args
@@ -70,7 +73,8 @@ if __name__ == "__main__":
     set_seed(args.seed)
 
     model = Yolov3(args.n_classes)
-    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+    optimizer = optim.Adam(
+        model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
 
     metric = MeanAveragePrecisionMetric(n_classes=args.n_classes)
 
@@ -108,7 +112,8 @@ if __name__ == "__main__":
 
     anchors = torch.from_numpy(read_anchors(args.anchors_dir)).to(DEVICE)
 
-    summary = Summary(model = model,train_dataset = train_dataset,args = args,dev_dataset=test_dataset)
+    summary = Summary(model=model, train_dataset=train_dataset,
+                      args=args, dev_dataset=test_dataset)
     summary()
 
     trainer = Yolov3Trainer(model=model,
