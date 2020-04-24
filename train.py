@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument('--epoch', help='training epochs',
                         default=20, type=int)
     parser.add_argument('--learning_rate',
-                        help='learning rate', default=1e-4)
+                        help='learning rate', default=5e-4)
     parser.add_argument('--val_batch_size',
                         help='Your validation batch size', default=8)
     parser.add_argument(
@@ -46,7 +46,7 @@ def parse_args():
     parser.add_argument('--n_classes', help='Number of classes', default=20)
 
     parser.add_argument('--gpu', help='use gpu', default=1, type=bool)
-    
+
     parser.add_argument(
         '--log_dir', help='Log directory path', default='logs', type=str)
 

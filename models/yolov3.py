@@ -272,13 +272,13 @@ class Yolov3(nn.Module):
         self.conv3 = nn.Conv2d(
             in_channels=256, out_channels=3 * (5 + self.n_classes), kernel_size=1)
 
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal(m.weight)
-                m.bias.data.fill_(0.01)
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
+        # for m in self.modules():
+        #     if isinstance(m, nn.Conv2d):
+        #         nn.init.kaiming_normal(m.weight)
+        #         m.bias.data.fill_(0.01)
+        #     elif isinstance(m, nn.BatchNorm2d):
+        #         m.weight.data.fill_(1)
+        #         m.bias.data.zero_()
 
     def forward(self, image):
 
