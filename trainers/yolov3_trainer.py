@@ -22,7 +22,7 @@ class Yolov3Trainer(BaseTrainer):
         #output_prediction = [feature_map13, feature_map26, feature_map52]
         #output_anchors = [anchors13, anchors26, anchors52]
         total_loss, xy_loss, wh_loss, conf_loss, prob_loss = self.criterion(
-            output_prediction, [y_true13, y_true26, y_true52], self.anchors if self.anchors else output_anchors)
+            output_prediction, [y_true13, y_true26, y_true52], self.anchors if self.anchors is not None else output_anchors)
         return [total_loss, xy_loss, wh_loss, conf_loss, prob_loss], [y_true13, y_true26, y_true52], output_prediction
 
     def train(self,
