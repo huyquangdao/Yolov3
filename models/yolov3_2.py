@@ -26,10 +26,7 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
         batch_size, bbox_attrs*num_anchors, grid_size*grid_size)
     prediction = prediction.transpose(1, 2).contiguous()
     prediction = prediction.view(
-        batch_size, grid_size*grid_size*num_anchors, bbox_attrs)
-
-    prediction = prediction.view(
-        batch_size, grid_size * grid_size, num_anchors, bbox_attrs)
+        batch_size, grid_size*grid_size, num_anchors, bbox_attrs)
 
     prediction = prediction.view(
         batch_size, grid_size, grid_size, num_anchors, bbox_attrs)
@@ -42,20 +39,18 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
     # Add the center offsets
     box_centers = torch.sigmoid(box_centers)
 
-    grid_x = torch.arange(start=0, end=grid_size).type(float_tensor)
-    grid_y = torch.arange(start=0, end=grid_size).type(float_tensor)
+    grid = np.arange(grid_size)
+    a, b = np.meshgrid(grid, grid)
 
-    grid_y, grid_x = torch.meshgrid([grid_x, grid_y])
+    x_offset = torch.FloatTensor(a).type(float_tensor).view(-1, 1)
+    y_offset = torch.FloatTensor(b).type(float_tensor).view(-1, 1)
 
-    xy_offset = torch.cat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)], dim=-1)
-
-    #xy_offset = [13,13,2]
-
-    xy_offset = xy_offset.unsqueeze(2)
+    x_y_offset = torch.cat((x_offset, y_offset), 1).repeat(
+        1, num_anchors).view(-1, 2).unsqueeze(0)
 
     #xy_offset = [13,13,1,2]
 
-    box_centers = box_centers + xy_offset
+    box_centers = box_centers + x_y_offset
 
     box_centers = box_centers * stride
 
@@ -65,7 +60,7 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
 
     boxes = torch.cat([box_centers, box_sizes], dim=-1)
 
-    return xy_offset, boxes, conf_logits, prob_logits
+    return x_y_offset, boxes, conf_logits, prob_logits
 
 
 class EmptyLayer(nn.Module):
@@ -372,9 +367,9 @@ class YoloLossLayer(nn.Module):
         pred_tw_th = pred_boxes_wh / anchors
 
         true_tw_th = torch.where(condition=(true_tw_th == 0),
-                                 x=torch.ones_like(true_tw_th).type(torch.cuda.FloatTensor), other=true_tw_th)
+                                 x=torch.ones_like(true_tw_th).type(float_tensor), other=true_tw_th)
         pred_tw_th = torch.where(condition=(pred_tw_th == 0),
-                                 x=torch.ones_like(pred_tw_th).type(torch.cuda.FloatTensor), other=pred_tw_th)
+                                 x=torch.ones_like(pred_tw_th).type(float_tensor), other=pred_tw_th)
 
         true_tw_th = torch.log(torch.clamp(true_tw_th, 1e-9, 1e9))
         pred_tw_th = torch.log(torch.clamp(pred_tw_th, 1e-9, 1e9))
