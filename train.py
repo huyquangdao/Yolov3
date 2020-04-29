@@ -40,7 +40,7 @@ def parse_args():
     parser.add_argument('--learning_rate',
                         help='learning rate', default=5e-4, type=float)
     parser.add_argument('--val_batch_size',
-                        help='Your validation batch size', default=8)
+                        help='Your validation batch size', default=8, type=int)
     parser.add_argument(
         '--grad_clip', help='gradient clipping theshold', default=5, type=int)
     parser.add_argument('--grad_accum_step',
