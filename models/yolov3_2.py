@@ -126,7 +126,7 @@ class Yolov3(nn.Module):
 
                 anchors = self.module_list[i][0].anchors
                 # Get the input dimensions
-                inp_dim = int(self.image_size[0])
+                inp_dim = int(self.image_size)
 
                 # Get the number of classes
                 num_classes = int(modules[i]["classes"])
