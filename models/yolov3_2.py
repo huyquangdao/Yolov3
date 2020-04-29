@@ -131,7 +131,8 @@ class Yolov3(nn.Module):
                 # Get the number of classes
                 num_classes = int(modules[i]["classes"])
 
-                anchors = torch.from_numpy(anchors).type(float_tensor)
+                anchors = torch.from_numpy(
+                    np.array(anchors)).type(float_tensor)
 
                 output_anchors.append(anchors)
 
