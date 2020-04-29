@@ -349,8 +349,6 @@ class YoloLossLayer(nn.Module):
 
         object_mask = y_true[..., 4:5]
 
-        y_true_wh = y_true[..., 2:4]
-
         ignore_mask = calculate_ignore_mask(
             boxes, y_true, object_mask, self.ignore_threshold)
 
@@ -378,9 +376,9 @@ class YoloLossLayer(nn.Module):
             (y_true[..., 2:3] / self.image_size) * \
             (y_true[..., 3:4] / self.image_size)
 
-        xy_loss = 5. * torch.sum(((true_xy - pred_xy)**2) *
+        xy_loss = torch.sum(((true_xy - pred_xy)**2) *
                                  object_mask * box_loss_scale) / batch_size
-        wh_loss = 5. * torch.sum(((true_tw_th - pred_tw_th)**2)
+        wh_loss = torch.sum(((true_tw_th - pred_tw_th)**2)
                                  * object_mask * box_loss_scale) / batch_size
 
         conf_pos_mask = object_mask
@@ -388,7 +386,7 @@ class YoloLossLayer(nn.Module):
         conf_loss_pos = conf_pos_mask * \
             torch.nn.functional.binary_cross_entropy_with_logits(
                 target=object_mask, input=conf_logits)
-        conf_loss_neg = 0.5 * conf_neg_mask * \
+        conf_loss_neg = conf_neg_mask * \
             torch.nn.functional.binary_cross_entropy_with_logits(
                 target=object_mask, input=conf_logits)
 
