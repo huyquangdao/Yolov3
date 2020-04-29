@@ -414,9 +414,9 @@ class YoloLossLayer(nn.Module):
         if self.use_label_smooth:
             delta = 0.01
             label_target = (1 - delta) * \
-                y_true[..., 5:] + delta * 1. / self.n_classes
+                y_true[..., 5:-1] + delta * 1. / self.n_classes
         else:
-            label_target = y_true[..., 5:]
+            label_target = y_true[..., 5:-1]
         class_loss = object_mask * \
             torch.nn.functional.binary_cross_entropy_with_logits(
                 input=prob_logits, target=label_target)
