@@ -11,7 +11,7 @@ else:
     float_tensor = torch.FloatTensor
 
 
-def predict_transform(prediction, inp_dim, anchors, num_classes, CUDA=True):
+def predict_transform(prediction, inp_dim, anchors, num_classes):
 
     batch_size = prediction.size(0)
 
@@ -77,7 +77,7 @@ class DetectionLayer(nn.Module):
         super(DetectionLayer, self).__init__()
         self.anchors = anchors
 
-    def forward(self, x, inp_dim, num_classes, anchors, CUDA):
+    def forward(self, x, inp_dim, num_classes, anchors):
         return x
 
 
@@ -89,7 +89,7 @@ class Yolov3(nn.Module):
         self.image_size = image_size
         self.n_classes = n_classes
 
-    def forward(self, x, CUDA):
+    def forward(self, x):
         modules = self.blocks[1:]
         outputs = {}  # We cache the outputs for the route layer
         write = 0  # This is explained a bit later
@@ -138,7 +138,7 @@ class Yolov3(nn.Module):
                 # Transform
 
                 output = self.module_list[i][0](
-                    x, inp_dim,  num_classes, anchors,  CUDA)
+                    x, inp_dim,  num_classes, anchors)
 
                 output_predictions.append(output)
 
