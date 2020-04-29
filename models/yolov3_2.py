@@ -22,10 +22,11 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
     bbox_attrs = 5 + n_classes
     num_anchors = anchors.shape[0]
 
-    predition = prediction.permute(0, 2, 3, 1)
+
+    predition = prediction.permute(0,2,3,1)
 
     prediction = prediction.view(
-        batch_size, grid_size, grid_size, num_anchors, bbox_attrs)
+        batch_size, grid_size,grid_size, num_anchors, bbox_attrs)
 
     box_centers, box_sizes, conf_logits, prob_logits = torch.split(
         prediction, [2, 2, 1, n_classes], dim=-1)
@@ -417,7 +418,7 @@ class YoloLossLayer(nn.Module):
 
 def predict(feature_maps, anchors, n_classes, image_size, device):
 
-    list_anchors = anchors
+    list_anchors = [anchors[6:], anchors[3:6], anchors[:3]]
 
     reorg_results = [predict_transform(feature_map, anchor, n_classes, image_size, device) for feature_map, anchor in list(
         zip(feature_maps, list_anchors))]
