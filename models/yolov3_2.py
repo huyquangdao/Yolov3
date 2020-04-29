@@ -1,5 +1,5 @@
 import torch.nn as nn
-from utils.utils import parse_config_file, create_modules
+from utils.utils import parse_config_file
 import torch
 import numpy as np
 
