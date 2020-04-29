@@ -84,6 +84,7 @@ if __name__ == "__main__":
                    image_size=args.image_size)
 
     if args.pretrained != '':
+        print(' load pretrained weight from darknet')
         model.load_weights(args.pretrained)
 
     optimizer = optim.Adam(
