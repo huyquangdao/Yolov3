@@ -11,14 +11,15 @@ else:
     float_tensor = torch.FloatTensor
 
 
-def predict_transform(prediction, inp_dim, anchors, num_classes, device):
+def predict_transform(prediction, anchors, n_classes, image_size, device=None):
 
     batch_size = prediction.size(0)
 
-    stride = inp_dim // prediction.size(2)
-    grid_size = inp_dim // stride
+    stride = image_size // prediction.size(2)
 
-    bbox_attrs = 5 + num_classes
+    grid_size = image_size // stride
+
+    bbox_attrs = 5 + n_classes
     num_anchors = anchors.shape[0]
 
     prediction = prediction.view(
@@ -34,7 +35,7 @@ def predict_transform(prediction, inp_dim, anchors, num_classes, device):
         batch_size, grid_size, grid_size, num_anchors, bbox_attrs)
 
     box_centers, box_sizes, conf_logits, prob_logits = torch.split(
-        prediction, [2, 2, 1, num_classes], dim=-1)
+        prediction, [2, 2, 1, n_classes], dim=-1)
 
     rescaled_anchors = anchors / stride
 
