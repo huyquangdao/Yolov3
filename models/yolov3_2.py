@@ -22,11 +22,7 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
     bbox_attrs = 5 + n_classes
     num_anchors = anchors.shape[0]
 
-    prediction = prediction.view(
-        batch_size, bbox_attrs*num_anchors, grid_size*grid_size)
-    prediction = prediction.transpose(1, 2).contiguous()
-    prediction = prediction.view(
-        batch_size, grid_size*grid_size, num_anchors, bbox_attrs)
+    predition = prediction.permute(0, 2, 3, 1)
 
     prediction = prediction.view(
         batch_size, grid_size, grid_size, num_anchors, bbox_attrs)
@@ -421,7 +417,7 @@ class YoloLossLayer(nn.Module):
 
 def predict(feature_maps, anchors, n_classes, image_size, device):
 
-    list_anchors = [anchors[6:], anchors[3:6], anchors[:3]]
+    list_anchors = anchors
 
     reorg_results = [predict_transform(feature_map, anchor, n_classes, image_size, device) for feature_map, anchor in list(
         zip(feature_maps, list_anchors))]
