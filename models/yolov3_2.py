@@ -45,8 +45,9 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
     x_offset = torch.FloatTensor(a).type(float_tensor).view(-1, 1)
     y_offset = torch.FloatTensor(b).type(float_tensor).view(-1, 1)
 
-    x_y_offset = torch.cat((x_offset, y_offset), 1).repeat(
-        1, num_anchors).view(-1, 2).unsqueeze(0)
+    x_y_offset = torch.cat((x_offset, y_offset), 1)
+
+    x_y_offset = x_y_offset.view(grid_size, grid_size, 1, 2)
 
     #xy_offset = [13,13,1,2]
 
@@ -377,9 +378,9 @@ class YoloLossLayer(nn.Module):
             (y_true[..., 3:4] / self.image_size)
 
         xy_loss = torch.sum(((true_xy - pred_xy)**2) *
-                                 object_mask * box_loss_scale) / batch_size
+                            object_mask * box_loss_scale) / batch_size
         wh_loss = torch.sum(((true_tw_th - pred_tw_th)**2)
-                                 * object_mask * box_loss_scale) / batch_size
+                            * object_mask * box_loss_scale) / batch_size
 
         conf_pos_mask = object_mask
         conf_neg_mask = (1 - object_mask) * ignore_mask
