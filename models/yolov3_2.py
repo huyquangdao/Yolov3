@@ -11,7 +11,7 @@ else:
     float_tensor = torch.FloatTensor
 
 
-def predict_transform(prediction, inp_dim, anchors, num_classes):
+def predict_transform(prediction, inp_dim, anchors, num_classes, device):
 
     batch_size = prediction.size(0)
 
