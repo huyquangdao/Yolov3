@@ -18,10 +18,12 @@ class Yolov3Trainer(BaseTrainer):
         batch = [t.to(self.device) for t in batch]
         image, y_true13, y_true26, y_true52 = batch
         image = image.permute(0, 3, 1, 2).type(torch.cuda.FloatTensor)
-        output = self.model(image)
+        output_prediction, output_anchors = self.model(image)
+        #output_prediction = [feature_map13, feature_map26, feature_map52]
+        #output_anchors = [anchors13, anchors26, anchors52]
         total_loss, xy_loss, wh_loss, conf_loss, prob_loss = self.criterion(
-            output, [y_true13, y_true26, y_true52], self.anchors)
-        return [total_loss, xy_loss, wh_loss, conf_loss, prob_loss], [y_true13, y_true26, y_true52], output
+            output_prediction, [y_true13, y_true26, y_true52], self.anchors if self.anchors else output_anchors)
+        return [total_loss, xy_loss, wh_loss, conf_loss, prob_loss], [y_true13, y_true26, y_true52], output_prediction
 
     def train(self,
               train_dataset,

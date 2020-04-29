@@ -4,7 +4,9 @@ import argparse
 import torch
 import os
 from trainers.yolov3_trainer import Yolov3Trainer
-from models.yolov3 import Yolov3, YoloLossLayer
+# from models.yolov3 import Yolov3, YoloLossLayer
+
+from models.yolov3_2 import Yolov3, YoloLossLayer
 
 from metrics.map import MeanAveragePrecisionMetric
 from utils.utils import set_seed, Summary
@@ -61,6 +63,12 @@ def parse_args():
     parser.add_argument(
         '--weight_decay', help='l2 regularization term', default=5e-4, type=float)
 
+    parser.add_argument('--cfg', help='yolo config file',
+                        required=True, type=str)
+
+    parser.add_argument(
+        '--pretrained', help='yolo pretrained weights', default='', type=str)
+
     args = parser.parse_args()
 
     return args
@@ -72,7 +80,12 @@ if __name__ == "__main__":
 
     set_seed(args.seed)
 
-    model = Yolov3(args.n_classes)
+    model = Yolov3(cfgfile=args.cfg, n_classes=args.n_classes,
+                   image_size=args.image_size)
+
+    if args.pretrained != '':
+        model.load_weights(args.pretrained)
+
     optimizer = optim.Adam(
         model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
 
