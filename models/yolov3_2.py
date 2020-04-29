@@ -148,7 +148,7 @@ class Yolov3(nn.Module):
                 # else:
                 #     detections = torch.cat((detections, x), 1)
 
-            # outputs[i] = x
+            outputs[i] = x
 
         return output_predictions, output_anchors
 
