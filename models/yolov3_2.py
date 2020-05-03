@@ -14,9 +14,6 @@ else:
 def predict_transform(prediction, anchors, n_classes, image_size, device=None):
 
     batch_size = prediction.size(0)
-
-    print(anchors)
-
     stride = image_size // prediction.size(2)
 
     grid_size = image_size // stride
@@ -26,7 +23,7 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
 
     predition = prediction.permute(0, 2, 3, 1)
 
-    prediction = prediction.view(
+    prediction = prediction.contiguous().view(
         batch_size, grid_size, grid_size, num_anchors, bbox_attrs)
 
     box_centers, box_sizes, conf_logits, prob_logits = torch.split(
