@@ -42,14 +42,16 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
     grid = np.arange(grid_size)
     a, b = np.meshgrid(grid, grid)
 
-    x_offset = torch.FloatTensor(a).type(float_tensor).view(-1, 1)
-    y_offset = torch.FloatTensor(b).type(float_tensor).view(-1, 1)
+    x_offset = torch.FloatTensor(a).view(-1, 1)
+    y_offset = torch.FloatTensor(b).view(-1, 1)
 
-    x_y_offset = torch.cat((x_offset, y_offset), 1)
+    x_offset = x_offset.type(float_tensor)
+    y_offset = y_offset.type(float_tensor)
 
-    x_y_offset = x_y_offset.view(grid_size, grid_size, 1, 2)
+    x_y_offset = torch.cat((x_offset, y_offset), 1).view(
+        grid_size, grid_size, 1, 2)
 
-    #xy_offset = [13,13,1,2]
+    # xy_offset = [13,13,1,2]
 
     box_centers = box_centers + x_y_offset
 
@@ -239,8 +241,8 @@ class Yolov3(nn.Module):
 
 def calculate_iou(pred_boxes, valid_true_boxes):
 
-    #boxes = [grid_size, grid_size, 3, 2]
-    #anchors = [3,2]
+    # boxes = [grid_size, grid_size, 3, 2]
+    # anchors = [3,2]
     pred_box_xy = pred_boxes[..., 0:2]
     pred_box_wh = pred_boxes[..., 2:4]
 
@@ -289,7 +291,7 @@ def calculate_ignore_mask(pred_boxes, y_true, object_mask,  threshold):
 
         if valid_true_boxes.shape[0] > 0:
 
-            #valid_true_boxe = [V,4]
+            # valid_true_boxe = [V,4]
 
             # shape: [13, 13, 3]
             # shape: [13, 13, 3, 4] & [V, 4] ==> [13, 13, 3, V]
@@ -353,7 +355,7 @@ class YoloLossLayer(nn.Module):
         ignore_mask = calculate_ignore_mask(
             boxes, y_true, object_mask, self.ignore_threshold)
 
-        #ignore_mask = [batch_size, gird_size, grid_size, 3, 1]
+        # ignore_mask = [batch_size, gird_size, grid_size, 3, 1]
 
         pred_boxes_xy = boxes[..., 0:2]
         pred_boxes_wh = boxes[..., 2:4]
