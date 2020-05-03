@@ -22,9 +22,13 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
 
     num_anchors = 3
 
-    predition = prediction.permute(0, 2, 3, 1)
+    prediction = prediction.view(
+        batch_size, bbox_attrs*num_anchors, grid_size*grid_size)
+    prediction = prediction.transpose(1, 2).contiguous()
+    prediction = prediction.view(
+        batch_size, grid_size*grid_size*num_anchors, bbox_attrs)
 
-    prediction = prediction.contiguous().view(
+    prediction = prediction.view(
         batch_size, grid_size, grid_size, num_anchors, bbox_attrs)
 
     box_centers, box_sizes, conf_logits, prob_logits = torch.split(
