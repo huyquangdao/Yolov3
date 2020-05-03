@@ -22,12 +22,9 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
 
     num_anchors = 3
 
-    prediction = prediction.view(
-        batch_size, bbox_attrs*num_anchors, grid_size*grid_size)
-    prediction = prediction.transpose(1, 2).contiguous()
-    prediction = prediction.view(
-        batch_size, grid_size*grid_size*num_anchors, bbox_attrs)
+    #prediction = [batch, 75, grid_size ,grid_size]
 
+    prediction = prediction.permute(0, 2, 3, 1)
     prediction = prediction.view(
         batch_size, grid_size, grid_size, num_anchors, bbox_attrs)
 
@@ -39,17 +36,17 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
     # Add the center offsets
     box_centers = torch.sigmoid(box_centers)
 
-    grid = np.arange(grid_size)
-    a, b = np.meshgrid(grid, grid)
+    grid_x = torch.arange(grid_size).type(float_tensor)
+    grid_y = torch.arange(grid_size).type(float_tensor)
 
-    x_offset = torch.FloatTensor(a).view(-1, 1)
-    y_offset = torch.FloatTensor(b).view(-1, 1)
+    grid_y, grid_x = torch.meshgrid([grid_x, grid_y])
 
-    x_offset = x_offset.type(float_tensor)
-    y_offset = y_offset.type(float_tensor)
+    x_offset = grid_x.contiguous().view(-1, 1)
+    y_offset = grid_y.contiguous().view(-1, 1)
 
-    x_y_offset = torch.cat((x_offset, y_offset), 1).view(
-        grid_size, grid_size, 1, 2)
+    x_y_offset = torch.cat([x_offset, y_offset], dim=-1)
+
+    x_y_offset = x_y_offset.view(grid_size, grid_size, 1, 2)
 
     # xy_offset = [13,13,1,2]
 
@@ -62,6 +59,8 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
     box_sizes = box_sizes * stride
 
     boxes = torch.cat([box_centers, box_sizes], dim=-1)
+
+    print(torch.min(box_centers))
 
     return x_y_offset, boxes, conf_logits, prob_logits
 
@@ -137,10 +136,10 @@ class Yolov3(nn.Module):
 
                 # Transform
 
-                output = self.module_list[i][0](
-                    x, inp_dim,  num_classes, anchors)
+                x = self.module_list[i][0](
+                    x = x, inp_dim = inp_dim, anchors = anchors, num_classes = num_classes)
 
-                output_predictions.append(output)
+                output_predictions.append(x)
 
                 # if not write:  # if no collector has been intialised.
                 #     detections = x
@@ -582,3 +581,53 @@ def create_modules(blocks):
         output_filters.append(filters)
 
     return (net_info, module_list)
+
+
+def predict_transform_2(prediction, inp_dim, anchors, num_classes, CUDA = True):
+
+
+    batch_size = prediction.size(0)
+    stride =  inp_dim // prediction.size(2)
+    grid_size = inp_dim // stride
+    bbox_attrs = 5 + num_classes
+    num_anchors = len(anchors)
+
+    prediction = prediction.view(batch_size, bbox_attrs*num_anchors, grid_size*grid_size)
+    prediction = prediction.transpose(1,2).contiguous()
+    prediction = prediction.view(batch_size, grid_size*grid_size*num_anchors, bbox_attrs)
+    anchors = [(a[0]/stride, a[1]/stride) for a in anchors]
+
+    #Sigmoid the  centre_X, centre_Y. and object confidencce
+    prediction[:,:,0] = torch.sigmoid(prediction[:,:,0])
+    prediction[:,:,1] = torch.sigmoid(prediction[:,:,1])
+    prediction[:,:,4] = torch.sigmoid(prediction[:,:,4])
+
+    #Add the center offsets
+    grid = np.arange(grid_size)
+    a,b = np.meshgrid(grid, grid)
+
+    x_offset = torch.FloatTensor(a).view(-1,1)
+    y_offset = torch.FloatTensor(b).view(-1,1)
+
+    if CUDA:
+        x_offset = x_offset.cuda()
+        y_offset = y_offset.cuda()
+
+    x_y_offset = torch.cat((x_offset, y_offset), 1).repeat(1,num_anchors).view(-1,2).unsqueeze(0)
+
+    prediction[:,:,:2] += x_y_offset
+
+    #log space transform height and the width
+    anchors = torch.FloatTensor(anchors)
+
+    if CUDA:
+        anchors = anchors.cuda()
+
+    anchors = anchors.repeat(grid_size*grid_size, 1).unsqueeze(0)
+    prediction[:,:,2:4] = torch.exp(prediction[:,:,2:4])*anchors
+
+    prediction[:,:,5: 5 + num_classes] = torch.sigmoid((prediction[:,:, 5 : 5 + num_classes]))
+
+    prediction[:,:,:4] *= stride
+
+    return prediction

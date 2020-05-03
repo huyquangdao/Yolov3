@@ -1,25 +1,32 @@
-from inference.yolo_inference import YoloInference
-from models.yolov3 import Yolov3
-import argparse
-import torch
-import cv2
-import numpy as np
 from utils.data_utils import read_anchors, letterbox_resize
+import numpy as np
+import cv2
+import torch
+import argparse
+from models.yolov3_2 import Yolov3
+from inference.yolo_inference import YoloInference
+from torch.autograd import Variable
+import matplotlib.pyplot as plt
 
 
 def parse_arg():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--image', help='image_path', type=str)
+    parser.add_argument('--image', help='image_path', type=str,
+                        default='data/dog-cycle-car.png')
     parser.add_argument('--anchors_dir', help='image_path',
                         type=str, default='data/voc_anchors.txt')
     parser.add_argument('--image_size', help='image size',
                         type=int, default=416)
     parser.add_argument(
         '--n_classes', help='number of classes', type=int, default=20)
-    parser.add_argument('--model', help='model_dir', type=str)
-    parser.add_argument('--gpu', type=bool, default=1)
+    parser.add_argument('--model', help='model_dir', type=str,
+                        default='weights/yolov3.weights')
+    parser.add_argument('--gpu', type=bool, default=0)
     parser.add_argument('--letterbox', type=bool, default=1)
+
+    parser.add_argument('--cfg', help='yolo config file',
+                        type=str, default='cfg/yolov3-voc.cfg')
 
     args = parser.parse_args()
 
@@ -44,8 +51,12 @@ if __name__ == "__main__":
 
     image = image.astype(np.float32)
 
-    model = Yolov3(args.n_classes)
-    model.load_state_dict(torch.load(args.model))
+    model = Yolov3(cfgfile=args.cfg, n_classes=args.n_classes,
+                   image_size=args.image_size)
+
+    model.load_weights('weights/yolov3.weights')
+
+    # model.eval()
 
     if args.gpu:
         device = torch.device('cuda:0')
@@ -54,13 +65,13 @@ if __name__ == "__main__":
 
     anchors = torch.from_numpy(read_anchors(args.anchors_dir))
 
-    image = torch.from_numpy(image)
+    image = Variable(torch.from_numpy(image))
 
     inference = YoloInference(
         model=model, device=device, n_classes=args.n_classes, anchors=anchors)
 
     boxes_, scores_, labels_ = inference.inference(
-        image, iou_threshold=0.45, score_threshold=0.01, top_k=50)
+        image, iou_threshold=0.45, score_threshold=0.5, top_k=50)
 
     if args.letterbox:
         boxes_[:, [0, 2]] = (boxes_[:, [0, 2]] - dw) / resize_ratio
@@ -68,6 +79,8 @@ if __name__ == "__main__":
     else:
         boxes_[:, [0, 2]] *= (width_ori/float(args.image_size))
         boxes_[:, [1, 3]] *= (height_ori/float(args.image_size))
+
+    image = cv2.imread(args.image)
 
     print("box coords:")
     print(boxes_)
@@ -77,3 +90,12 @@ if __name__ == "__main__":
     print('*' * 30)
     print("labels:")
     print(labels_)
+
+    for box in boxes_[:3]:
+        box = [int(t) for t in box]
+        x1, y1, x2, y2 = box
+        cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
+        # break
+
+    plt.imshow(image)
+    plt.show()

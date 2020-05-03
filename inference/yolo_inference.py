@@ -1,6 +1,7 @@
 from base.inference import BaseInference
 from utils.utils import cpu_nms
-from models.yolov3 import predict
+from models.yolov3_2 import predict
+from utils.utils import write_results
 
 
 class YoloInference(BaseInference):
@@ -9,7 +10,6 @@ class YoloInference(BaseInference):
         super().__init__(model, device)
         self.anchors = anchors
         self.n_classes = n_classes
-
         self.anchors = self.anchors.to(self.device)
 
     def inference(self, input, iou_threshold=0.45, score_threshold=0.3, top_k=200):
@@ -20,6 +20,7 @@ class YoloInference(BaseInference):
 
         input = input.permute(0, 3, 1, 2).to(self.device)
         output, output_anchors = self.model(input)
+
         boxes, confidence_scores, class_scores = predict(
             output, self.anchors, self.n_classes, image_size, self.device)
         scores = confidence_scores * class_scores
