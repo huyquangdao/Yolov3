@@ -19,7 +19,8 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
     grid_size = image_size // stride
 
     bbox_attrs = 5 + n_classes
-    num_anchors = anchors.shape[0]
+
+    num_anchors = 3
 
     predition = prediction.permute(0, 2, 3, 1)
 
