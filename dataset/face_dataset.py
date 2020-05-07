@@ -27,7 +27,7 @@ class FaceDataset(BaseDataset):
         self.anchors = read_anchors(anchor_dir)
         self.dataset = self.parser.parse_dataset()
 
-        self.n_classes = len(self.parser.voc_names)
+        self.n_classes = len(self.parser.face_names)
 
     def __len__(self):
         return len(self.dataset)
