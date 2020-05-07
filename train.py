@@ -95,7 +95,7 @@ if __name__ == "__main__":
     train_dataset = FaceDataset(type_name='detection',
                                 name_dir=args.name_dir,
                                 annotation_dir=os.path.join(
-                                    args.train_dir, 'annotations'),
+                                    args.train_dir, 'annotation'),
                                 anchor_dir=args.anchors_dir,
                                 image_dir=os.path.join(
                                     args.train_dir, 'images'),
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     test_dataset = FaceDataset(type_name='detection',
                                name_dir=args.name_dir,
                                annotation_dir=os.path.join(
-                                   args.test_dir, 'annotations'),
+                                   args.test_dir, 'annotation'),
                                anchor_dir=args.anchors_dir,
                                image_dir=os.path.join(
                                    args.test_dir, 'images'),

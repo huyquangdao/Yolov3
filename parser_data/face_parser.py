@@ -1,11 +1,13 @@
 from base.parser import BaseParser
 import numpy as np
+from utils.data_utils import get_voc_names
 
 
 class FaceParser(BaseParser):
 
     def __init__(self, type_name, file_dir, name_dir):
         super().__init__(type_name, file_dir, name_dir)
+        self.face_names = get_voc_names(self.name_dir)
 
     def process_one(self, file):
 

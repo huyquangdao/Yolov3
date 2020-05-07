@@ -385,31 +385,31 @@ def random_expand(img, bbox, max_ratio=4, fill=0, keep_ratio=True):
 
 def augment_image(image, boxes, image_size, letterbox_resize = True, is_train = True):
 
-        if is_train:
-            image = random_color_distort(image)
-            # random expansion with prob 0.5
-            if np.random.uniform(0, 1) > 0.5:
-                image, boxes = random_expand(image, boxes, 4)
-            # random cropping
-            h, w, _ = image.shape
-            boxes, crop = random_crop_with_constraints(boxes, (w, h))
-            x0, y0, w, h = crop
-            image = image[y0: y0+h, x0: x0+w]
+    if is_train:
+        image = random_color_distort(image)
+        # random expansion with prob 0.5
+        if np.random.uniform(0, 1) > 0.5:
+            image, boxes = random_expand(image, boxes, 4)
+        # random cropping
+        h, w, _ = image.shape
+        boxes, crop = random_crop_with_constraints(boxes, (w, h))
+        x0, y0, w, h = crop
+        image = image[y0: y0+h, x0: x0+w]
 
-            # resize with random interpolation
-            h, w, _ = image.shape
-            interp = np.random.randint(0, 5)
-            image, boxes = resize_with_bbox(image, boxes, image_size, image_size, interp=interp, letterbox= letterbox_resize)
+        # resize with random interpolation
+        h, w, _ = image.shape
+        interp = np.random.randint(0, 5)
+        image, boxes = resize_with_bbox(image, boxes, image_size, image_size, interp=interp, letterbox= letterbox_resize)
 
-            # random horizontal flip
-            h, w, _ = image.shape
-            image, boxes = random_flip(image, boxes, px=0.5)
+        # random horizontal flip
+        h, w, _ = image.shape
+        image, boxes = random_flip(image, boxes, px=0.5)
 
-        else:
-            image, boxes = resize_with_bbox(image, boxes, image_size, image_size, interp=1, letterbox= letterbox_resize)
-        image = image / 255.
-        image = image.astype(np.float32)
-        return image, boxes
+    else:
+        image, boxes = resize_with_bbox(image, boxes, image_size, image_size, interp=1, letterbox= letterbox_resize)
+    image = image / 255.
+    image = image.astype(np.float32)
+    return image, boxes
 
 def read_anchors(anchor_path):
     anchors = np.reshape(np.asarray(open(anchor_path, 'r').read().split(','), np.float32), [-1, 2])
