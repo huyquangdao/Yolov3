@@ -132,7 +132,7 @@ class Yolov3(nn.Module):
                 inp_dim = int(self.image_size)
 
                 # Get the number of classes
-                num_classes = int(modules[i]["classes"])
+                num_classes = self.n_classes
 
                 anchors = torch.from_numpy(
                     np.array(anchors)).type(float_tensor)
