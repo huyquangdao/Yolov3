@@ -1,6 +1,6 @@
-from base.parser import BaseParser
-import numpy as np
 from utils.data_utils import get_voc_names
+import numpy as np
+from base.parser import BaseParser
 
 
 class FaceParser(BaseParser):
@@ -18,7 +18,7 @@ class FaceParser(BaseParser):
             list_boxes = []
             image_name = lines[0].strip()
 
-            for line in lines[1:]:
+            for line in lines[1:-2]:
                 label, x_min, y_min, x_max, y_max = line.strip().split(' ')
                 list_labels.append(self.face_names[label])
                 list_boxes.append([float(x_min), float(
