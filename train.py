@@ -45,7 +45,7 @@ def parse_args():
         '--grad_clip', help='gradient clipping theshold', default=5, type=int)
     parser.add_argument('--grad_accum_step',
                         help='gradient accumalation step', default=1)
-    parser.add_argument('--n_classes', help='Number of classes', default=2)
+    parser.add_argument('--n_classes', help='Number of classes', default=1)
 
     parser.add_argument('--gpu', help='use gpu', default=1, type=bool)
 
