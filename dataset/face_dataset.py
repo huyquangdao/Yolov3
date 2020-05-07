@@ -47,6 +47,8 @@ class FaceDataset(BaseDataset):
         file_name, labels, list_boxes = self.dataset[idx]['file_name'], self.dataset[
             idx]['labels'], self.dataset[idx]['list_all_boxes']
 
+        print(labels)
+
         image = self.__read_image(file_name)
 
         image, boxes = resize_with_bbox(img=image,
