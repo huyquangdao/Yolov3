@@ -1,7 +1,8 @@
-import torch.nn as nn
-from utils.utils import parse_config_file
-import torch
 import numpy as np
+import torch
+from utils.utils import parse_config_file
+import torch.nn as nn
+
 
 if torch.cuda.is_available():
     bool_tensor = torch.cuda.BoolTensor
@@ -24,7 +25,14 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
 
     #prediction = [batch, 75, grid_size ,grid_size]
 
-    prediction = prediction.permute(0, 2, 3, 1)
+    prediction = prediction.view(
+        batch_size, bbox_attrs*num_anchors, grid_size*grid_size)
+
+    prediction = prediction.transpose(1, 2).contiguous()
+
+    prediction = prediction.view(
+        batch_size, grid_size*grid_size, num_anchors, bbox_attrs)
+
     prediction = prediction.view(
         batch_size, grid_size, grid_size, num_anchors, bbox_attrs)
 
@@ -34,21 +42,20 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
     rescaled_anchors = anchors / stride
 
     # Add the center offsets
-    box_centers = torch.sigmoid(box_centers)
 
-    grid_x = torch.arange(grid_size).type(float_tensor)
-    grid_y = torch.arange(grid_size).type(float_tensor)
+    grid = np.arange(grid_size)
 
-    grid_y, grid_x = torch.meshgrid([grid_x, grid_y])
+    a, b = np.meshgrid(grid, grid)
 
-    x_offset = grid_x.contiguous().view(-1, 1)
-    y_offset = grid_y.contiguous().view(-1, 1)
+    x_offset = torch.FloatTensor(a).view(-1, 1).type(float_tensor)
+    y_offset = torch.FloatTensor(b).view(-1, 1).type(float_tensor)
 
-    x_y_offset = torch.cat([x_offset, y_offset], dim=-1)
-
-    x_y_offset = x_y_offset.view(grid_size, grid_size, 1, 2)
+    x_y_offset = torch.cat((x_offset, y_offset), 1).repeat(
+        1, num_anchors).view(grid_size, grid_size, num_anchors, 2).unsqueeze(0)
 
     # xy_offset = [13,13,1,2]
+
+    box_centers = torch.sigmoid(box_centers)
 
     box_centers = box_centers + x_y_offset
 
@@ -60,9 +67,7 @@ def predict_transform(prediction, anchors, n_classes, image_size, device=None):
 
     boxes = torch.cat([box_centers, box_sizes], dim=-1)
 
-    print(torch.min(box_centers))
-
-    return x_y_offset, boxes, conf_logits, prob_logits
+    return x_y_offset, boxes, conf_logits, prob_logits, stride
 
 
 class EmptyLayer(nn.Module):
@@ -137,7 +142,7 @@ class Yolov3(nn.Module):
                 # Transform
 
                 x = self.module_list[i][0](
-                    x = x, inp_dim = inp_dim, anchors = anchors, num_classes = num_classes)
+                    x=x, inp_dim=inp_dim, anchors=anchors, num_classes=num_classes)
 
                 output_predictions.append(x)
 
@@ -281,7 +286,7 @@ def calculate_ignore_mask(pred_boxes, y_true, object_mask,  threshold):
 
     batch_size = pred_boxes.shape[0]
 
-    ignore_mask = torch.zeros(size=object_mask.shape).type(float_tensor)
+    ignore_mask = torch.ones(size=object_mask.shape).type(float_tensor)
 
     for idx in range(batch_size):
 
@@ -298,9 +303,9 @@ def calculate_ignore_mask(pred_boxes, y_true, object_mask,  threshold):
 
             best_iou = torch.max(iou, dim=-1)[0]
 
-            ignore_mask_temp = (best_iou < threshold).type(float_tensor)
+            ignore_mask_temp = best_iou > threshold
 
-            ignore_mask[idx] = ignore_mask_temp.unsqueeze(-1)
+            ignore_mask[idx][ignore_mask_temp] = 0.
 
     return ignore_mask
 
@@ -344,9 +349,7 @@ class YoloLossLayer(nn.Module):
 
         batch_size = y_true.shape[0]
 
-        ratio = self.image_size / grid_size
-
-        xy_offset, boxes, conf_logits, prob_logits = predict_transform(
+        xy_offset, boxes, conf_logits, prob_logits, stride = predict_transform(
             feature_map, anchors, self.n_classes, self.image_size, self.device)
 
         object_mask = y_true[..., 4:5]
@@ -359,8 +362,8 @@ class YoloLossLayer(nn.Module):
         pred_boxes_xy = boxes[..., 0:2]
         pred_boxes_wh = boxes[..., 2:4]
 
-        true_xy = y_true[..., 0:2] / ratio - xy_offset
-        pred_xy = pred_boxes_xy / ratio - xy_offset
+        true_xy = (y_true[..., 0:2] / stride) - xy_offset
+        pred_xy = (pred_boxes_xy / stride) - xy_offset
 
         true_tw_th = y_true[..., 2:4] / anchors
 
@@ -378,21 +381,25 @@ class YoloLossLayer(nn.Module):
             (y_true[..., 2:3] / self.image_size) * \
             (y_true[..., 3:4] / self.image_size)
 
-        xy_loss = torch.sum(((true_xy - pred_xy)**2) *
-                            object_mask * box_loss_scale) / batch_size
-        wh_loss = torch.sum(((true_tw_th - pred_tw_th)**2)
-                            * object_mask * box_loss_scale) / batch_size
+        xy_loss = 5. * object_mask * box_loss_scale * \
+            torch.nn.functional.mse_loss(pred_xy, true_xy, reduction='none')
+        wh_loss = 5. * object_mask * box_loss_scale * \
+            torch.nn.functional.mse_loss(
+                pred_tw_th, true_tw_th, reduction='none')
+
+        xy_loss = torch.sum(xy_loss) / batch_size
+        wh_loss = torch.sum(wh_loss) / batch_size
 
         conf_pos_mask = object_mask
         conf_neg_mask = (1 - object_mask) * ignore_mask
         conf_loss_pos = conf_pos_mask * \
             torch.nn.functional.binary_cross_entropy_with_logits(
-                target=object_mask, input=conf_logits)
+                target=object_mask, input=conf_logits, reduction='none')
         conf_loss_neg = conf_neg_mask * \
             torch.nn.functional.binary_cross_entropy_with_logits(
-                target=object_mask, input=conf_logits)
+                target=object_mask, input=conf_logits, reduction='none')
 
-        conf_loss = conf_loss_pos + conf_loss_neg
+        conf_loss = conf_loss_pos + 0.5 * conf_loss_neg
 
         if self.use_focal_loss:
             alpha = 1.0
@@ -409,12 +416,12 @@ class YoloLossLayer(nn.Module):
         if self.use_label_smooth:
             delta = 0.01
             label_target = (1 - delta) * \
-                y_true[..., 5:-1] + delta * 1. / self.n_classes
+                y_true[..., 5:] + delta * 1. / self.n_classes
         else:
-            label_target = y_true[..., 5:-1]
+            label_target = y_true[..., 5:]
         class_loss = object_mask * \
             torch.nn.functional.binary_cross_entropy_with_logits(
-                input=prob_logits, target=label_target)
+                input=prob_logits, target=label_target, reduction='none')
         class_loss = torch.sum(class_loss) / batch_size
 
         return xy_loss, wh_loss, conf_loss, class_loss
@@ -429,7 +436,7 @@ def predict(feature_maps, anchors, n_classes, image_size, device):
 
     def reshape(result):
 
-        xy_offset, boxes, conf_logits, prob_logits = result
+        xy_offset, boxes, conf_logits, prob_logits, _ = result
 
         grid_size = xy_offset.shape[1]
         n_classes = prob_logits.shape[-1]
@@ -583,51 +590,54 @@ def create_modules(blocks):
     return (net_info, module_list)
 
 
-def predict_transform_2(prediction, inp_dim, anchors, num_classes, CUDA = True):
-
+def predict_transform_2(prediction, inp_dim, anchors, num_classes, CUDA=True):
 
     batch_size = prediction.size(0)
-    stride =  inp_dim // prediction.size(2)
+    stride = inp_dim // prediction.size(2)
     grid_size = inp_dim // stride
     bbox_attrs = 5 + num_classes
     num_anchors = len(anchors)
 
-    prediction = prediction.view(batch_size, bbox_attrs*num_anchors, grid_size*grid_size)
-    prediction = prediction.transpose(1,2).contiguous()
-    prediction = prediction.view(batch_size, grid_size*grid_size*num_anchors, bbox_attrs)
+    prediction = prediction.view(
+        batch_size, bbox_attrs*num_anchors, grid_size*grid_size)
+    prediction = prediction.transpose(1, 2).contiguous()
+    prediction = prediction.view(
+        batch_size, grid_size*grid_size*num_anchors, bbox_attrs)
     anchors = [(a[0]/stride, a[1]/stride) for a in anchors]
 
-    #Sigmoid the  centre_X, centre_Y. and object confidencce
-    prediction[:,:,0] = torch.sigmoid(prediction[:,:,0])
-    prediction[:,:,1] = torch.sigmoid(prediction[:,:,1])
-    prediction[:,:,4] = torch.sigmoid(prediction[:,:,4])
+    # Sigmoid the  centre_X, centre_Y. and object confidencce
+    prediction[:, :, 0] = torch.sigmoid(prediction[:, :, 0])
+    prediction[:, :, 1] = torch.sigmoid(prediction[:, :, 1])
+    prediction[:, :, 4] = torch.sigmoid(prediction[:, :, 4])
 
-    #Add the center offsets
+    # Add the center offsets
     grid = np.arange(grid_size)
-    a,b = np.meshgrid(grid, grid)
+    a, b = np.meshgrid(grid, grid)
 
-    x_offset = torch.FloatTensor(a).view(-1,1)
-    y_offset = torch.FloatTensor(b).view(-1,1)
+    x_offset = torch.FloatTensor(a).view(-1, 1)
+    y_offset = torch.FloatTensor(b).view(-1, 1)
 
     if CUDA:
         x_offset = x_offset.cuda()
         y_offset = y_offset.cuda()
 
-    x_y_offset = torch.cat((x_offset, y_offset), 1).repeat(1,num_anchors).view(-1,2).unsqueeze(0)
+    x_y_offset = torch.cat((x_offset, y_offset), 1).repeat(
+        1, num_anchors).view(-1, 2).unsqueeze(0)
 
-    prediction[:,:,:2] += x_y_offset
+    prediction[:, :, :2] += x_y_offset
 
-    #log space transform height and the width
+    # log space transform height and the width
     anchors = torch.FloatTensor(anchors)
 
     if CUDA:
         anchors = anchors.cuda()
 
     anchors = anchors.repeat(grid_size*grid_size, 1).unsqueeze(0)
-    prediction[:,:,2:4] = torch.exp(prediction[:,:,2:4])*anchors
+    prediction[:, :, 2:4] = torch.exp(prediction[:, :, 2:4])*anchors
 
-    prediction[:,:,5: 5 + num_classes] = torch.sigmoid((prediction[:,:, 5 : 5 + num_classes]))
+    prediction[:, :, 5: 5 +
+               num_classes] = torch.sigmoid((prediction[:, :, 5: 5 + num_classes]))
 
-    prediction[:,:,:4] *= stride
+    prediction[:, :, :4] *= stride
 
     return prediction

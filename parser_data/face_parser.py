@@ -1,9 +1,5 @@
 from base.parser import BaseParser
 import numpy as np
-text2label = {
-    '0': 'None',
-    '1': 'Face'
-}
 
 
 class FaceParser(BaseParser):
@@ -22,7 +18,7 @@ class FaceParser(BaseParser):
 
             for line in lines[1:]:
                 label, x_min, x_max, y_min, y_max = line.strip().split(' ')
-                list_labels.append(text2label[label])
+                list_labels.append(self.voc_names[label])
                 list_boxes.append([float(x_min), float(
                     y_min), float(x_max), float(y_max)])
 
