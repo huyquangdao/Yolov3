@@ -4,14 +4,16 @@ import torch
 import matplotlib.pyplot as plt
 import cv2
 
+
 def get_voc_names(file_path):
     voc_names = dict()
-    with open(file_path,'r') as f:
+    with open(file_path, 'r') as f:
         lines = f.read().split('\n')
-        for i,line in enumerate(lines):
+        for i, line in enumerate(lines):
             name = line.strip()
             voc_names[name] = i
     return voc_names
+
 
 def mix_up(img1, img2, bbox1, bbox2):
     '''
@@ -27,14 +29,18 @@ def mix_up(img1, img2, bbox1, bbox2):
     # rand_num = np.random.random()
     rand_num = np.random.beta(1.5, 1.5)
     rand_num = max(0, min(1, rand_num))
-    mix_img[:img1.shape[0], :img1.shape[1], :] = img1.astype('float32') * rand_num
-    mix_img[:img2.shape[0], :img2.shape[1], :] += img2.astype('float32') * (1. - rand_num)
+    mix_img[:img1.shape[0], :img1.shape[1],
+            :] = img1.astype('float32') * rand_num
+    mix_img[:img2.shape[0], :img2.shape[1],
+            :] += img2.astype('float32') * (1. - rand_num)
 
     mix_img = mix_img.astype('uint8')
 
     # the last element of the 2nd dimention is the mix up weight
-    bbox1 = np.concatenate((bbox1, np.full(shape=(bbox1.shape[0], 1), fill_value=rand_num)), axis=-1)
-    bbox2 = np.concatenate((bbox2, np.full(shape=(bbox2.shape[0], 1), fill_value=1. - rand_num)), axis=-1)
+    bbox1 = np.concatenate(
+        (bbox1, np.full(shape=(bbox1.shape[0], 1), fill_value=rand_num)), axis=-1)
+    bbox2 = np.concatenate(
+        (bbox2, np.full(shape=(bbox2.shape[0], 1), fill_value=1. - rand_num)), axis=-1)
     mix_bbox = np.concatenate((bbox1, bbox2), axis=0)
 
     return mix_img, mix_bbox
@@ -82,7 +88,8 @@ def bbox_crop(bbox, crop_box=None, allow_outside_center=True):
         mask = np.ones(bbox.shape[0], dtype=bool)
     else:
         centers = (bbox[:, :2] + bbox[:, 2:4]) / 2
-        mask = np.logical_and(crop_bbox[:2] <= centers, centers < crop_bbox[2:]).all(axis=1)
+        mask = np.logical_and(
+            crop_bbox[:2] <= centers, centers < crop_bbox[2:]).all(axis=1)
 
     # transform borders
     bbox[:, :2] = np.maximum(bbox[:, :2], crop_bbox[:2])
@@ -93,6 +100,7 @@ def bbox_crop(bbox, crop_box=None, allow_outside_center=True):
     mask = np.logical_and(mask, (bbox[:, :2] < bbox[:, 2:4]).all(axis=1))
     bbox = bbox[mask]
     return bbox
+
 
 def bbox_iou(bbox_a, bbox_b, offset=0):
     """Calculate Intersection-Over-Union(IOU) of two bounding boxes.
@@ -196,7 +204,8 @@ def random_crop_with_constraints(bbox, size, min_scale=0.3, max_scale=1,
 
             crop_t = random.randrange(h - crop_h)
             crop_l = random.randrange(w - crop_w)
-            crop_bb = np.array((crop_l, crop_t, crop_l + crop_w, crop_t + crop_h))
+            crop_bb = np.array(
+                (crop_l, crop_t, crop_l + crop_w, crop_t + crop_h))
 
             if len(bbox) == 0:
                 top, bottom = crop_t, crop_t + crop_h
@@ -249,7 +258,8 @@ def random_color_distort(img, brightness_delta=32, hue_vari=18, sat_vari=0.5, va
     def random_brightness(img, brightness_delta, p=0.5):
         if np.random.uniform(0, 1) > p:
             img = img.astype(np.float32)
-            brightness_delta = int(np.random.uniform(-brightness_delta, brightness_delta))
+            brightness_delta = int(
+                np.random.uniform(-brightness_delta, brightness_delta))
             img = img + brightness_delta
         return np.clip(img, 0, 255)
 
@@ -303,7 +313,8 @@ def resize_with_bbox(img, bbox, new_width, new_height, interp=0, letterbox=False
     '''
 
     if letterbox:
-        image_padded, resize_ratio, dw, dh = letterbox_resize(img, new_width, new_height, interp)
+        image_padded, resize_ratio, dw, dh = letterbox_resize(
+            img, new_width, new_height, interp)
 
         # xmin, xmax
         bbox[:, [0, 2]] = bbox[:, [0, 2]] * resize_ratio + dw
@@ -383,7 +394,8 @@ def random_expand(img, bbox, max_ratio=4, fill=0, keep_ratio=True):
 
     return dst, bbox
 
-def augment_image(image, boxes, image_size, letterbox_resize = True, is_train = True):
+
+def augment_image(image, boxes, image_size, letterbox_resize=True, is_train=True):
 
     if is_train:
         image = random_color_distort(image)
@@ -399,91 +411,85 @@ def augment_image(image, boxes, image_size, letterbox_resize = True, is_train = 
         # resize with random interpolation
         h, w, _ = image.shape
         interp = np.random.randint(0, 5)
-        image, boxes = resize_with_bbox(image, boxes, image_size, image_size, interp=interp, letterbox= letterbox_resize)
+        image, boxes = resize_with_bbox(
+            image, boxes, image_size, image_size, interp=interp, letterbox=letterbox_resize)
 
         # random horizontal flip
         h, w, _ = image.shape
         image, boxes = random_flip(image, boxes, px=0.5)
 
     else:
-        image, boxes = resize_with_bbox(image, boxes, image_size, image_size, interp=1, letterbox= letterbox_resize)
+        image, boxes = resize_with_bbox(
+            image, boxes, image_size, image_size, interp=1, letterbox=letterbox_resize)
     image = image / 255.
     image = image.astype(np.float32)
     return image, boxes
 
+
 def read_anchors(anchor_path):
-    anchors = np.reshape(np.asarray(open(anchor_path, 'r').read().split(','), np.float32), [-1, 2])
+    anchors = np.reshape(np.asarray(
+        open(anchor_path, 'r').read().split(','), np.float32), [-1, 2])
     return anchors
 
 
 def build_ground_truth(n_classes, labels, boxes, anchors, image_size):
 
-        anchors_mask = [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
+    anchors_mask = [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
 
-        y_true_13 = np.zeros((image_size//32, image_size//32, 3,  4 + 1 + n_classes))
-        y_true_26 = np.zeros((image_size//16, image_size//16, 3, 4 + 1 + n_classes))
-        y_true_52 = np.zeros((image_size//8, image_size//8, 3, 4 + 1 + n_classes ))
+    # convert boxes form:
+    # shape: [N, 2]
+    # (x_center, y_center)
+    box_centers = (boxes[:, 0:2] + boxes[:, 2:4]) / 2
+    # (width, height)
+    box_sizes = boxes[:, 2:4] - boxes[:, 0:2]
 
-        y_true = [y_true_13, y_true_26, y_true_52]
+    # [13, 13, 3, 5+num_class+1] `5` means coords and labels. `1` means mix up weight.
+    y_true_13 = np.zeros(
+        (image_size // 32, image_size // 32, 3, 6 + n_classes), np.float32)
+    y_true_26 = np.zeros(
+        (image_size // 16, image_size // 16, 3, 6 + n_classes), np.float32)
+    y_true_52 = np.zeros(
+        (image_size // 8, image_size // 8, 3, 6 + n_classes), np.float32)
 
-        #calculate iou bettween boxes and anchors and choose the anchor with highest iou
+    # mix up weight default to 1.
+    y_true_13[..., -1] = 1.
+    y_true_26[..., -1] = 1.
+    y_true_52[..., -1] = 1.
 
-        boxes_wh = boxes[:,2:4] - boxes[:,0:2]
+    y_true = [y_true_13, y_true_26, y_true_52]
 
-        #boxes_hw  = [N,2]
+    # [N, 1, 2]
+    box_sizes = np.expand_dims(box_sizes, 1)
+    # broadcast tricks
+    # [N, 1, 2] & [9, 2] ==> [N, 9, 2]
+    mins = np.maximum(- box_sizes / 2, - anchors / 2)
+    maxs = np.minimum(box_sizes / 2, anchors / 2)
+    # [N, 9, 2]
+    whs = maxs - mins
 
-        boxes_xy_center = (boxes[:, 0:2] + boxes[:, 2:4]) / 2
+    # [N, 9]
+    iou = (whs[:, :, 0] * whs[:, :, 1]) / (
+        box_sizes[:, :, 0] * box_sizes[:, :, 1] + anchors[:, 0] * anchors[:, 1] - whs[:, :, 0] * whs[:, :,
+                                                                                                     1] + 1e-10)
+    # [N]
+    best_match_idx = np.argmax(iou, axis=1)
 
-        #boxes_xy_center  = [N,2]
+    ratio_dict = {1.: 8., 2.: 16., 3.: 32.}
+    for i, idx in enumerate(best_match_idx):
+        # idx: 0,1,2 ==> 2; 3,4,5 ==> 1; 6,7,8 ==> 0
+        feature_map_group = 2 - idx // 3
+        # scale ratio: 0,1,2 ==> 8; 3,4,5 ==> 16; 6,7,8 ==> 32
+        ratio = ratio_dict[np.ceil((idx + 1) / 3.)]
+        x = int(np.floor(box_centers[i, 0] / ratio))
+        y = int(np.floor(box_centers[i, 1] / ratio))
+        k = anchors_mask[feature_map_group].index(idx)
+        c = labels[i]
+        # print(feature_map_group, '|', y,x,k,c)
 
-        boxes_wh = np.expand_dims(boxes_wh, 1)
+        y_true[feature_map_group][y, x, k, :2] = box_centers[i]
+        y_true[feature_map_group][y, x, k, 2:4] = box_sizes[i]
+        y_true[feature_map_group][y, x, k, 4] = 1.
+        y_true[feature_map_group][y, x, k, 5 + c] = 1.
+        y_true[feature_map_group][y, x, k, -1] = boxes[i, -1]
 
-        # = [N,1,2]
-
-        min_hw = np.maximum(- boxes_wh /2, - anchors/ 2)
-        max_hw = np.minimum(boxes_wh /2, anchors/ 2)
-
-        #max_hw,min_hw = [N,9,2]
-
-        whs = max_hw - min_hw
-
-        #max_hw,min_hw = [N,9,2]
-
-        iou = (whs[:, :, 0] * whs[:, :, 1]) / (
-                boxes_wh[:, :, 0] * boxes_wh[:, :, 1] + anchors[:, 0] * anchors[:, 1] - whs[:, :, 0] * whs[:, :,
-                                                                                                         1] + 1e-10)
-        #iou = [N,9]
-
-        best_match_idx = np.argmax(iou,1)
-
-        #match_id = [N]
-
-        ratio_dict = {1.: 8., 2.: 16., 3.: 32.}
-
-        for i, idx in enumerate(best_match_idx):
-
-            # idx: 0,1,2 ==> 2; 3,4,5 ==> 1; 6,7,8 ==> 0
-            feature_map_group = 2 - idx // 3
-            # scale ratio: 0,1,2 ==> 8; 3,4,5 ==> 16; 6,7,8 ==> 32
-
-            ratio = ratio_dict[np.ceil((idx + 1) / 3.)]
-
-            x = int(np.floor(boxes_xy_center[i, 0] / ratio))
-            y = int(np.floor(boxes_xy_center[i, 1] / ratio))
-
-            k = anchors_mask[feature_map_group].index(idx)
-            c = labels[i]
-            # print(feature_map_group, '|', y,x,k,c)
-
-            shape_0 = y_true[feature_map_group].shape[0]
-            shape_1 = y_true[feature_map_group].shape[1]
-
-            if y < shape_0 and x < shape_1:
-                y_true[feature_map_group][y, x, k, :2] = boxes_xy_center[i]
-                y_true[feature_map_group][y, x, k, 2:4] = boxes_wh[i]
-                y_true[feature_map_group][y, x, k, 4] = 1.
-                y_true[feature_map_group][y, x, k, 5 + c] = 1.
-            else:
-                print('in here')
-
-        return y_true
+    return y_true_13, y_true_26, y_true_52
