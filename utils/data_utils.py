@@ -1,8 +1,8 @@
-import random
-import numpy as np
-import torch
-import matplotlib.pyplot as plt
 import cv2
+import matplotlib.pyplot as plt
+import torch
+import numpy as np
+import random
 
 
 def get_voc_names(file_path):
@@ -445,11 +445,11 @@ def build_ground_truth(n_classes, labels, boxes, anchors, image_size):
 
     # [13, 13, 3, 5+num_class+1] `5` means coords and labels. `1` means mix up weight.
     y_true_13 = np.zeros(
-        (image_size // 32, image_size // 32, 3, 6 + n_classes), np.float32)
+        (image_size // 32, image_size // 32, 3, 5 + n_classes), np.float32)
     y_true_26 = np.zeros(
-        (image_size // 16, image_size // 16, 3, 6 + n_classes), np.float32)
+        (image_size // 16, image_size // 16, 3, 5 + n_classes), np.float32)
     y_true_52 = np.zeros(
-        (image_size // 8, image_size // 8, 3, 6 + n_classes), np.float32)
+        (image_size // 8, image_size // 8, 3, 5 + n_classes), np.float32)
 
     # mix up weight default to 1.
     y_true_13[..., -1] = 1.
@@ -484,12 +484,13 @@ def build_ground_truth(n_classes, labels, boxes, anchors, image_size):
         y = int(np.floor(box_centers[i, 1] / ratio))
         k = anchors_mask[feature_map_group].index(idx)
         c = labels[i]
-        # print(feature_map_group, '|', y,x,k,c)
+        # print(feature_map_group, '|', y,x,k,c, box_centers)
+
+        # print(feature_map_group, y ,x, k)
 
         y_true[feature_map_group][y, x, k, :2] = box_centers[i]
         y_true[feature_map_group][y, x, k, 2:4] = box_sizes[i]
         y_true[feature_map_group][y, x, k, 4] = 1.
         y_true[feature_map_group][y, x, k, 5 + c] = 1.
-        y_true[feature_map_group][y, x, k, -1] = boxes[i, -1]
 
     return y_true_13, y_true_26, y_true_52

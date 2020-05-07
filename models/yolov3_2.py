@@ -14,6 +14,8 @@ else:
 
 def predict_transform(prediction, anchors, n_classes, image_size, device=None):
 
+    # print(prediction.shape)
+
     batch_size = prediction.size(0)
     stride = image_size // prediction.size(2)
 
@@ -87,7 +89,7 @@ class DetectionLayer(nn.Module):
 class Yolov3(nn.Module):
     def __init__(self, cfgfile, n_classes, image_size):
         super(Yolov3, self).__init__()
-        self.blocks = parse_config_file(cfgfile)
+        self.blocks = parse_config_file('/content/Yolov3/cfg/yolov3-voc.cfg')
         self.net_info, self.module_list = create_modules(self.blocks)
         self.image_size = image_size
         self.n_classes = n_classes
@@ -133,6 +135,8 @@ class Yolov3(nn.Module):
 
                 # Get the number of classes
                 num_classes = self.n_classes
+
+                # print(num_classes)
 
                 anchors = torch.from_numpy(
                     np.array(anchors)).type(float_tensor)

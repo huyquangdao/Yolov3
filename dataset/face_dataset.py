@@ -1,8 +1,9 @@
-import cv2
-import os
-from base.dataset import BaseDataset
-from parser_data.face_parser import FaceParser
+import matplotlib.pyplot as plt
 from utils.data_utils import resize_with_bbox, build_ground_truth, read_anchors
+from parser_data.face_parser import FaceParser
+from base.dataset import BaseDataset
+import os
+import cv2
 
 
 class FaceDataset(BaseDataset):
@@ -45,6 +46,7 @@ class FaceDataset(BaseDataset):
 
         file_name, labels, list_boxes = self.dataset[idx]['file_name'], self.dataset[
             idx]['labels'], self.dataset[idx]['list_all_boxes']
+
         image = self.__read_image(file_name)
 
         image, boxes = resize_with_bbox(img=image,
@@ -53,7 +55,17 @@ class FaceDataset(BaseDataset):
                                         new_height=self.image_size,
                                         letterbox=self.letterbox)
 
-        image = image / 255.
+        # print(file_name, boxes)
+
+        # cv2.imwrite('image1.jpg',image)
+
+        assert image.shape == (self.image_size, self.image_size, 3)
+
+        # print(boxes)
+
+        assert (boxes < self.image_size + 50).all()
+
+        # print(boxes)
 
         y_true13, y_true26, y_true52 = build_ground_truth(n_classes=self.n_classes,
                                                           labels=labels,

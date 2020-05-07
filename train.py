@@ -83,9 +83,9 @@ if __name__ == "__main__":
     model = Yolov3(cfgfile=args.cfg, n_classes=args.n_classes,
                    image_size=args.image_size)
 
-    # if args.pretrained != '':
-    #     print(' load pretrained weight from darknet')
-    #     model.load_weights(args.pretrained)
+    if args.pretrained != '':
+        print(' load pretrained weight from darknet')
+        model.load_weights(args.pretrained)
 
     optimizer = optim.Adam(
         model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
