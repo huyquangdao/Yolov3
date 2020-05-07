@@ -13,7 +13,7 @@ from utils.utils import set_seed, Summary
 
 from utils.data_utils import read_anchors
 
-from dataset.voc_dataset import VocDataset
+from dataset.face_dataset import FaceDataset
 from utils.log import Writer
 
 
@@ -92,27 +92,27 @@ if __name__ == "__main__":
 
     metric = MeanAveragePrecisionMetric(n_classes=args.n_classes)
 
-    train_dataset = VocDataset(type_name='detection',
+    train_dataset = FaceDataset(type_name='detection',
+                                name_dir=args.name_dir,
+                                annotation_dir=os.path.join(
+                                    args.train_dir, 'annotations'),
+                                anchor_dir=args.anchors_dir,
+                                image_dir=os.path.join(
+                                    args.train_dir, 'images'),
+                                image_size=args.image_size,
+                                letterbox=args.letterbox,
+                                is_train=True)
+
+    test_dataset = FaceDataset(type_name='detection',
                                name_dir=args.name_dir,
                                annotation_dir=os.path.join(
-                                   args.train_dir, 'Annotations'),
+                                   args.test_dir, 'annotations'),
                                anchor_dir=args.anchors_dir,
                                image_dir=os.path.join(
-                                   args.train_dir, 'JPEGImages'),
+                                   args.test_dir, 'images'),
                                image_size=args.image_size,
                                letterbox=args.letterbox,
-                               is_train=True)
-
-    test_dataset = VocDataset(type_name='detection',
-                              name_dir=args.name_dir,
-                              annotation_dir=os.path.join(
-                                  args.test_dir, 'Annotations'),
-                              anchor_dir=args.anchors_dir,
-                              image_dir=os.path.join(
-                                  args.test_dir, 'JPEGImages'),
-                              image_size=args.image_size,
-                              letterbox=args.letterbox,
-                              is_train=False)
+                               is_train=False)
 
     writer = Writer(log_dir=args.log_dir)
 
@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
     summary = Summary(model=model, train_dataset=train_dataset,
                       args=args, dev_dataset=test_dataset, device=DEVICE)
-    summary()
+    # summary()
 
     trainer = Yolov3Trainer(model=model,
                             optimizer=optimizer,
