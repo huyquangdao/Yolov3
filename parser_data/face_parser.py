@@ -16,7 +16,7 @@ class FaceParser(BaseParser):
 
             list_labels = []
             list_boxes = []
-            image_name = lines[0]
+            image_name = lines[0].strip()
 
             for line in lines[1:]:
                 label, x_min, x_max, y_min, y_max = line.strip().split(' ')
