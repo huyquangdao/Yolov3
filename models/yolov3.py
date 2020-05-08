@@ -540,7 +540,7 @@ class YoloLossLayer(nn.Module):
         else:
             label_target = y_true[..., 5:]
         
-        label_target = label_target.unsqueeze(-1)
+        # label_target = label_target.unsqueeze(-1)
 
         class_loss = object_mask * \
             torch.nn.functional.binary_cross_entropy_with_logits(
