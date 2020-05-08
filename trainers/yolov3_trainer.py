@@ -108,7 +108,7 @@ class Yolov3Trainer(BaseTrainer):
 
             if dev_loader is not None:
 
-                self.model.eval()
+                # self.model.eval()
 
                 dev_epoch_total_loss = Loss()
                 dev_epoch_xy_loss = Loss()
