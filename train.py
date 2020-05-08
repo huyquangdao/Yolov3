@@ -4,9 +4,9 @@ import argparse
 import torch
 import os
 from trainers.yolov3_trainer import Yolov3Trainer
-# from models.yolov3 import Yolov3, YoloLossLayer
+from models.yolov3 import Yolov3, YoloLossLayer
 
-from models.yolov3_2 import Yolov3, YoloLossLayer
+# from models.yolov3_2 import Yolov3, YoloLossLayer
 
 from metrics.map import MeanAveragePrecisionMetric
 from utils.utils import set_seed, Summary
@@ -80,8 +80,7 @@ if __name__ == "__main__":
 
     set_seed(args.seed)
 
-    model = Yolov3(cfgfile=args.cfg, n_classes=args.n_classes,
-                   image_size=args.image_size)
+    model = Yolov3(n_classes=args.n_classes)
 
     if args.pretrained != '':
         print(' load pretrained weight from darknet')
