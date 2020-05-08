@@ -84,7 +84,9 @@ if __name__ == "__main__":
 
     if args.pretrained != '':
         print(' load pretrained weight from darknet')
-        model.load_weights(args.pretrained)
+        # model.load_weights(args.pretrained)
+
+        model.load_state_dict(torch.load(args.pretrained))
 
     optimizer = optim.Adam(
         model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
