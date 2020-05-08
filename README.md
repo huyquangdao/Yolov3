@@ -14,9 +14,9 @@ If you want to install package dependencies of this project, please install via 
 pip install -r requirements.txt
 ```
 
-### Training:
+### 3.Training:
 
-### Some Results:
+### 4.Some Results:
 
 <img src ="./data/result1.jpeg" width = "60%">
 
