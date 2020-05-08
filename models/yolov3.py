@@ -536,9 +536,9 @@ class YoloLossLayer(nn.Module):
         if self.use_label_smooth:
             delta = 0.01
             label_target = (1 - delta) * \
-                y_true[..., 5] + delta * 1. / self.n_classes
+                y_true[..., 5:] + delta * 1. / self.n_classes
         else:
-            label_target = y_true[..., 5]
+            label_target = y_true[..., 5:]
         
         label_target = label_target.unsqueeze(-1)
 
