@@ -1,4 +1,4 @@
-## a Pytorch Implementation Of Yolo V3
+## A Pytorch Implementation Of Yolo V3
 
 
 ### 1.Introduction:
